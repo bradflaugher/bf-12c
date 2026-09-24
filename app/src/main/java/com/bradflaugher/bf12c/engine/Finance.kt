@@ -83,7 +83,7 @@ object Finance {
         return t.pv.multiply(k.odd, WORK).add(t.fv.multiply(k.discount, WORK), WORK).negate().divide(k.annuity, WORK)
     }
 
-    /** Like the 12c, a fractional number of periods is rounded up to the next integer. */
+    /** Like the 12c, a fractional number of periods is rounded to a whole number (see [ceilTolerant]). */
     fun solveN(t: Tvm): BigDecimal {
         val r = rate(t)
         val exact: BigDecimal = if (r.signum() == 0) {
@@ -103,9 +103,10 @@ object Finance {
         return ceilTolerant(exact)
     }
 
+    /** The 12c rounds n up, unless the fraction is under 0.005, then down. */
     private fun ceilTolerant(x: BigDecimal): BigDecimal {
-        val nearest = x.setScale(0, RoundingMode.HALF_UP)
-        if (x.subtract(nearest).abs() < BigDecimal("1E-20")) return nearest
+        val floor = x.setScale(0, RoundingMode.FLOOR)
+        if (x.subtract(floor) < BigDecimal("0.005")) return floor
         return x.setScale(0, RoundingMode.CEILING)
     }
 

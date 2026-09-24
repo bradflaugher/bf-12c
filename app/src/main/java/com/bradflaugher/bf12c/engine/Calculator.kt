@@ -214,7 +214,8 @@ class Calculator {
         val d = key.digit
         if (d != null) return digit(d)
         val wasFin = lastWasFin
-        lastWasFin = false
+        // The f and g prefixes are neutral; the key after them decides.
+        if (key != Key.F && key != Key.G) lastWasFin = false
         when (key) {
             Key.DOT -> entryOrStart { it.dot() }
             Key.EEX -> entryOrStart { it.eex() }
@@ -286,6 +287,7 @@ class Calculator {
     private fun gold(key: Key) {
         val d = key.digit
         if (d != null) {
+            // FIX is a mode key: it keeps any pending financial solve.
             finishEntry()
             mode = DisplayMode.Fix(d)
             return
@@ -325,7 +327,8 @@ class Calculator {
     }
 
     private fun blue(key: Key) {
-        lastWasFin = false
+        // Mode keys (BEG/END, D.MY/M.DY) don't break "solve on the next financial key".
+        if (key !in MODE_KEYS) lastWasFin = false
         when (key) {
             Key.N -> { finishEntry(); x = x.multiply(TWELVE, WORK); fin[N] = x; liftEnabled = false; lastWasFin = true }
             Key.I -> { finishEntry(); x = x.divide(TWELVE, WORK); fin[I] = x; liftEnabled = false; lastWasFin = true }
@@ -902,6 +905,7 @@ class Calculator {
         private val TWELVE = BigDecimal.valueOf(12)
         private val FIN_KEYS = listOf(Key.N, Key.I, Key.PV, Key.PMT, Key.FV)
         private val STO_OPS = setOf(Key.ADD, Key.SUB, Key.MUL, Key.DIV)
+        private val MODE_KEYS = setOf(Key.D7, Key.D8, Key.D4, Key.D5)
     }
 }
 
