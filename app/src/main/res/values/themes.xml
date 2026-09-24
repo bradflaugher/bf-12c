@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Bf12c" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bezel</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+    <color name="bezel">#FF0B0C0B</color>
+    <color name="ic_background">#FF0B0C0B</color>
+</resources>
