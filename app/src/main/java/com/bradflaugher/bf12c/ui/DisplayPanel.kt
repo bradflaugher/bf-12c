@@ -196,6 +196,7 @@ private fun Annunciators(display: Display, phosphor: Phosphor, toast: String?, e
         BasicText("g", style = if (a.g) on.copy(color = Palette.blueBright) else off)
         BasicText("BEGIN", style = if (a.begin) on else off)
         BasicText("D.MY", style = if (a.dmy) on else off)
+        BasicText("C", style = if (a.compound) on else off)
         BasicText("PRGM", style = if (a.prgm) on else off)
         if (a.running) BasicText("RUN", style = on)
         a.pending?.let { BasicText(it, style = on) }

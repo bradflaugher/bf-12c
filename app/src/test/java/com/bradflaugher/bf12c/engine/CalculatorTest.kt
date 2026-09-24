@@ -181,7 +181,8 @@ class CalculatorTest {
         // Program: square X and add one.  f P/R  ENTER * 1 +  f P/R
         val c = run("f RS ENTER * 1 + f RS")
         assertEquals(4, c.program.size)
-        c.keys("f RDN 7 RS")
+        // Leaving program mode rewinds to line 00, so R/S runs from line 01.
+        c.keys("7 RS")
         while (c.step()) Unit
         assertClose("50", c.x)
     }
@@ -208,5 +209,55 @@ class CalculatorTest {
         assertEquals("1.2346E+3", Format.format(BigDecimal("1234.5678"), DisplayMode.Sci(4)))
         assertEquals("0.1", Format.format(BigDecimal("0.10"), DisplayMode.All))
         assertEquals("1.0E+30", Format.format(BigDecimal("1E30"), DisplayMode.All))
+    }
+
+    @Test fun financialStoreDisablesLiftAndSolveOverwritesX() {
+        val c = run("100000 PV 5")
+        assertClose("5", c.x)
+        assertClose("0", c.stack[1])
+        val solved = run("7 ENTER 10 n 5 i 1000 PV 0 PMT FV")
+        // The solve replaces X; Y still holds the 7 keyed before.
+        assertClose("7", solved.stack[1])
+    }
+
+    @Test fun oddPeriodSimpleAndCompound() {
+        assertClose("-1132.459155282629569264507005", run("12.5 n 1 i 1000 PV 0 PMT FV").x, 28)
+        assertClose("-1132.445139959209509076566907757", run("STO EEX 12.5 n 1 i 1000 PV 0 PMT FV").x, 28)
+    }
+
+    @Test fun amortizationStack() {
+        val c = run("f 2 99 ENTER 30 g n 6.5 g i 100000 PV 632.07 CHS PMT 0 n 1 f n")
+        // First month: interest 541.67 and principal 90.40, both paid out.
+        assertClose("-541.67", c.x)
+        assertClose("-90.40", c.stack[1])
+        assertClose("1", c.stack[2])
+        assertClose("99909.60", c.fin[2])
+    }
+
+    @Test fun depreciationStack() {
+        val c = run("7 ENTER 10000 PV 1000 FV 5 n 2 f %T")
+        assertClose("1800", c.x)
+        assertClose("5400", c.stack[1])
+        assertClose("2", c.stack[2])
+    }
+
+    @Test fun keyboardGotoRunsNamedLine() {
+        // 001 1  002 +  003 2  004 *  — GTO 03 then R/S runs only "2 *".
+        val c = run("f RS 1 + 2 * f RS 5 g RDN 0 3 RS")
+        while (c.step()) Unit
+        assertClose("10", c.x)
+    }
+
+    @Test fun irrSameSignIsError7() {
+        assertEquals(7, run("100 g PV 50 g PMT f FV").error)
+    }
+
+    @Test fun reviewCashFlows() {
+        val c = run("100 CHS g PV 30 g PMT 4 g FV 20 g PMT RCL g FV")
+        assertClose("1", c.x)
+        c.keys("RCL g PMT")
+        assertClose("20", c.x)
+        c.keys("RCL g FV")
+        assertClose("4", c.x)
     }
 }

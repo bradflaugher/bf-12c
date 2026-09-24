@@ -28,6 +28,10 @@ class Calculator {
         private set
     var dmy = false
         private set
+
+    /** The C annunciator: compound (not simple) interest for odd TVM periods. */
+    var compoundOdd = false
+        private set
     var mode: DisplayMode = DisplayMode.All
         private set
 
@@ -115,6 +119,7 @@ class Calculator {
             g = prefix == Prefix.G,
             begin = begin,
             dmy = dmy,
+            compound = compoundOdd,
             prgm = programMode,
             running = running,
             pending = prefixLabel(),
@@ -299,7 +304,10 @@ class Calculator {
             Key.PCT_T -> depreciation(Finance.Depreciation.SL)
             Key.DELTA_PCT -> depreciation(Finance.Depreciation.SOYD)
             Key.PCT -> depreciation(Finance.Depreciation.DB)
-            Key.RS -> { finishEntry(); programMode = !programMode }
+            Key.RS -> {
+                finishEntry()
+                programMode = true
+            }
             Key.SST -> { // CLEAR Σ
                 entry = null
                 for (r in 1..6) regs[r] = BigDecimal.ZERO
@@ -319,14 +327,14 @@ class Calculator {
     private fun blue(key: Key) {
         lastWasFin = false
         when (key) {
-            Key.N -> { finishEntry(); x = x.multiply(TWELVE, WORK); fin[N] = x; liftEnabled = true; lastWasFin = true }
-            Key.I -> { finishEntry(); x = x.divide(TWELVE, WORK); fin[I] = x; liftEnabled = true; lastWasFin = true }
+            Key.N -> { finishEntry(); x = x.multiply(TWELVE, WORK); fin[N] = x; liftEnabled = false; lastWasFin = true }
+            Key.I -> { finishEntry(); x = x.divide(TWELVE, WORK); fin[I] = x; liftEnabled = false; lastWasFin = true }
             Key.PV -> cashFlow(initial = true)
             Key.PMT -> cashFlow(initial = false)
             Key.FV -> {
                 finishEntry()
                 val count = x
-                if (!BigMath.isInteger(count) || count.signum() <= 0 || count > BigDecimal.valueOf(9999)) throw CalcError(6)
+                if (!BigMath.isInteger(count) || count.signum() <= 0 || count > BigDecimal.valueOf(99)) throw CalcError(6)
                 nj[currentFlow()] = count.toInt()
                 liftEnabled = true
             }
@@ -468,6 +476,10 @@ class Calculator {
                 liftEnabled = true
             }
             key == Key.DOT && !p.dot -> prefix = p.copy(dot = true)
+            key == Key.EEX && p.op == null && !p.dot -> {
+                prefix = Prefix.None
+                compoundOdd = !compoundOdd
+            }
             key in STO_OPS && p.op == null && !p.dot -> prefix = p.copy(op = key)
             key in FIN_KEYS && p.op == null && !p.dot -> {
                 prefix = Prefix.None
@@ -483,6 +495,16 @@ class Calculator {
         when {
             d != null -> { prefix = Prefix.None; pushResult(regs[registerIndex(d, p.dot)]) }
             key == Key.DOT && !p.dot -> prefix = p.copy(dot = true)
+            key == Key.G && !p.dot && !p.g -> prefix = p.copy(g = true)
+            p.g && key == Key.PMT -> {
+                // Review cash flows backwards: show CFj, then step n down.
+                prefix = Prefix.None
+                val j = currentFlow()
+                pushResult(regs[j])
+                if (j > 0) fin[N] = BigDecimal.valueOf((j - 1).toLong())
+            }
+            p.g && key == Key.FV -> { prefix = Prefix.None; pushResult(BigDecimal.valueOf(nj[currentFlow()].toLong())) }
+            p.g -> { prefix = Prefix.None; execute(key) }
             key in FIN_KEYS && !p.dot -> { prefix = Prefix.None; pushResult(fin[FIN_KEYS.indexOf(key)]) }
             else -> { prefix = Prefix.None; execute(key) }
         }
@@ -511,12 +533,13 @@ class Calculator {
                 pc = target - 1 // step() advances before executing
             }
         } else {
-            pc = target
+            // R/S executes the line after pc, so park one line early.
+            pc = (target - 1).coerceAtLeast(0)
         }
     }
 
     private fun skipLine() {
-        pc = if (pc >= program.size) 0 else pc + 1
+        pc = (pc + 1).coerceAtMost(program.size)
     }
 
     private fun clearRegisters() {
@@ -531,7 +554,7 @@ class Calculator {
 
     // --- Financial -------------------------------------------------------------------
 
-    private fun tvm() = Finance.Tvm(fin[N], fin[I], fin[PV], fin[PMT], fin[FV], begin)
+    private fun tvm() = Finance.Tvm(fin[N], fin[I], fin[PV], fin[PMT], fin[FV], begin, compoundOdd)
 
     private fun finKey(key: Key, compute: Boolean) {
         finishEntry()
@@ -545,11 +568,12 @@ class Calculator {
                 else -> Finance.solveFv(tvm())
             }.round(BigMath.MC)
             fin[idx] = result
-            pushResult(result)
+            x = result
+            liftEnabled = true
         } else {
             fin[idx] = x
+            liftEnabled = false
         }
-        liftEnabled = true
         lastWasFin = true
     }
 
@@ -579,7 +603,8 @@ class Calculator {
         val (cf, counts) = flows()
         val v = Finance.npv(fin[I], cf, counts).round(BigMath.MC)
         fin[PV] = v
-        pushResult(v)
+        x = v
+        liftEnabled = true
     }
 
     private fun irr() {
@@ -587,7 +612,8 @@ class Calculator {
         val (cf, counts) = flows()
         val v = Finance.irr(cf, counts).round(BigMath.MC)
         fin[I] = v
-        pushResult(v)
+        x = v
+        liftEnabled = true
     }
 
     private fun roundToDisplay(v: BigDecimal): BigDecimal = when (val m = mode) {
@@ -605,16 +631,18 @@ class Calculator {
         val a = Finance.amortize(count.toInt(), periodsDone, fin[I], fin[PV], fin[PMT], begin, ::roundToDisplay)
         fin[PV] = a.balance.round(BigMath.MC)
         fin[N] = done.add(count)
-        lastX = count
+        // T = old Y, Z = payments, Y = principal, X = interest.
+        stack[3] = stack[1]
+        stack[2] = count
+        stack[1] = a.principal.round(BigMath.MC)
+        x = a.interest
         liftEnabled = true
-        pushResult(a.principal)
-        pushResult(a.interest)
     }
 
     private fun simpleInterest() {
         finishEntry()
         val s = Finance.simpleInterest(fin[N], fin[I], fin[PV])
-        lastX = x
+        stack[3] = x
         stack[2] = s.on365.round(BigMath.MC)
         stack[1] = s.principal.round(BigMath.MC)
         x = s.on360
@@ -624,10 +652,12 @@ class Calculator {
     private fun depreciation(method: Finance.Depreciation) {
         finishEntry()
         val (d, remaining) = Finance.depreciate(method, x, fin[PV], fin[FV], fin[N], fin[I])
-        lastX = x
-        x = remaining
+        // T = old Y, Z = year, Y = remaining depreciable value, X = depreciation.
+        stack[3] = stack[1]
+        stack[2] = x
+        stack[1] = remaining.round(BigMath.MC)
+        x = d
         liftEnabled = true
-        pushResult(d)
     }
 
     private fun bondPrice() {
@@ -635,7 +665,9 @@ class Calculator {
         val settlement = Dates.decode(y, dmy)
         val maturity = Dates.decode(x, dmy)
         val p = Finance.bondPrice(fin[I], fin[PMT], settlement, maturity)
-        lastX = x
+        // T = settlement, Z = maturity, Y = accrued interest, X = price.
+        stack[3] = y
+        stack[2] = x
         fin[PV] = p.price.round(BigMath.MC)
         y = p.accrued.round(BigMath.MC)
         x = p.price
@@ -648,7 +680,9 @@ class Calculator {
         val maturity = Dates.decode(x, dmy)
         val r = Finance.bondYield(fin[PV], fin[PMT], settlement, maturity).round(BigMath.MC)
         fin[I] = r
-        binary { _, _ -> r }
+        lift()
+        x = r
+        liftEnabled = true
     }
 
     private fun dateAdd() {
@@ -756,7 +790,10 @@ class Calculator {
             is ProgramParser.Outcome.Immediate -> {
                 stepBuffer.clear()
                 when (outcome.action) {
-                    ProgramParser.Action.EXIT -> programMode = false
+                    ProgramParser.Action.EXIT -> {
+                        programMode = false
+                        pc = 0
+                    }
                     ProgramParser.Action.CLEAR -> { program.clear(); pc = 0 }
                     ProgramParser.Action.SST -> pc = if (pc >= program.size) 0 else pc + 1
                     ProgramParser.Action.BST -> pc = if (pc == 0) program.size else pc - 1
@@ -794,7 +831,7 @@ class Calculator {
     private fun prefixLabel(): String? = when (val p = prefix) {
         Prefix.None, Prefix.F, Prefix.G -> null
         is Prefix.Sto -> "STO" + (p.op?.let { " ${it.label}" } ?: "") + if (p.dot) " ." else ""
-        is Prefix.Rcl -> "RCL" + if (p.dot) " ." else ""
+        is Prefix.Rcl -> "RCL" + (if (p.g) " g" else "") + if (p.dot) " ." else ""
         is Prefix.Gto -> "GTO ${p.digits}"
     }.let { label ->
         if (programMode && stepBuffer.isNotEmpty()) ProgramParser.mnemonic(stepBuffer) else label
@@ -810,6 +847,7 @@ class Calculator {
         put("fin", fin.joinToString(";") { it.toString() })
         put("begin", begin.toString())
         put("dmy", dmy.toString())
+        put("compoundOdd", compoundOdd.toString())
         put("mode", when (val m = mode) {
             is DisplayMode.Fix -> "fix${m.digits}"
             is DisplayMode.Sci -> "sci${m.digits}"
@@ -828,6 +866,7 @@ class Calculator {
             state["fin"]?.split(";")?.map(::BigDecimal)?.forEachIndexed { k, v -> if (k < 5) fin[k] = v }
             begin = state["begin"] == "true"
             dmy = state["dmy"] == "true"
+            compoundOdd = state["compoundOdd"] == "true"
             mode = state["mode"]?.let { m ->
                 when {
                     m.startsWith("fix") -> DisplayMode.Fix(m.removePrefix("fix").toInt())
@@ -848,7 +887,7 @@ class Calculator {
         data object F : Prefix
         data object G : Prefix
         data class Sto(val op: Key? = null, val dot: Boolean = false) : Prefix
-        data class Rcl(val dot: Boolean = false) : Prefix
+        data class Rcl(val dot: Boolean = false, val g: Boolean = false) : Prefix
         data class Gto(val digits: String = "") : Prefix
     }
 
@@ -871,6 +910,7 @@ data class Annunciators(
     val g: Boolean,
     val begin: Boolean,
     val dmy: Boolean,
+    val compound: Boolean,
     val prgm: Boolean,
     val running: Boolean,
     val pending: String?,

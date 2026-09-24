@@ -25,6 +25,8 @@ object Finance {
         val pmt: BigDecimal,
         val fv: BigDecimal,
         val begin: Boolean,
+        /** C annunciator: compound interest over a fractional first period. */
+        val compoundOdd: Boolean = false,
     )
 
     // 0 = PV + (1 + r·s)·PMT·[(1 − (1+r)^−n) / r] + FV·(1+r)^−n
@@ -45,25 +47,40 @@ object Finance {
         return r
     }
 
+    /**
+     * The TVM terms at rate r: odd-period factor on PV, annuity factor on PMT and
+     * discount factor on FV. A fractional n is an odd first period, charged simple
+     * interest (or compound with the C flag), exactly as the 12c does.
+     */
+    private data class Terms(val odd: BigDecimal, val annuity: BigDecimal, val discount: BigDecimal)
+
+    private fun terms(t: Tvm, r: BigDecimal): Terms {
+        val whole = if (BigMath.isInteger(t.n)) t.n else t.n.setScale(0, RoundingMode.FLOOR)
+        val frac = t.n.subtract(whole)
+        val odd = when {
+            frac.signum() == 0 -> ONE
+            t.compoundOdd -> BigMath.pow(ONE.add(r, WORK), frac)
+            else -> ONE.add(r.multiply(frac, WORK), WORK)
+        }
+        return Terms(odd, annuity(r, whole, t.begin), discount(r, whole))
+    }
+
     fun solvePv(t: Tvm): BigDecimal {
-        val r = rate(t)
-        return t.pmt.multiply(annuity(r, t.n, t.begin), WORK)
-            .add(t.fv.multiply(discount(r, t.n), WORK), WORK).negate()
+        val k = terms(t, rate(t))
+        return t.pmt.multiply(k.annuity, WORK).add(t.fv.multiply(k.discount, WORK), WORK).negate().divide(k.odd, WORK)
     }
 
     fun solveFv(t: Tvm): BigDecimal {
-        val r = rate(t)
-        val v = discount(r, t.n)
-        if (v.signum() == 0) throw CalcError(5)
-        val rest = t.pv.add(t.pmt.multiply(annuity(r, t.n, t.begin), WORK), WORK)
-        return rest.negate().divide(v, WORK)
+        val k = terms(t, rate(t))
+        if (k.discount.signum() == 0) throw CalcError(5)
+        val rest = t.pv.multiply(k.odd, WORK).add(t.pmt.multiply(k.annuity, WORK), WORK)
+        return rest.negate().divide(k.discount, WORK)
     }
 
     fun solvePmt(t: Tvm): BigDecimal {
-        val r = rate(t)
-        val a = annuity(r, t.n, t.begin)
-        if (a.signum() == 0) throw CalcError(5)
-        return t.pv.add(t.fv.multiply(discount(r, t.n), WORK), WORK).negate().divide(a, WORK)
+        val k = terms(t, rate(t))
+        if (k.annuity.signum() == 0) throw CalcError(5)
+        return t.pv.multiply(k.odd, WORK).add(t.fv.multiply(k.discount, WORK), WORK).negate().divide(k.annuity, WORK)
     }
 
     /** Like the 12c, a fractional number of periods is rounded up to the next integer. */
@@ -93,15 +110,19 @@ object Finance {
     }
 
     fun solveI(t: Tvm): BigDecimal {
-        fun f(r: BigDecimal): BigDecimal =
-            t.pv.add(t.pmt.multiply(annuity(r, t.n, t.begin), WORK), WORK)
-                .add(t.fv.multiply(discount(r, t.n), WORK), WORK)
+        fun f(r: BigDecimal): BigDecimal {
+            val k = terms(t, r)
+            return t.pv.multiply(k.odd, WORK).add(t.pmt.multiply(k.annuity, WORK), WORK)
+                .add(t.fv.multiply(k.discount, WORK), WORK)
+        }
         if (t.n.signum() <= 0) throw CalcError(5)
+        val whole = t.n.setScale(0, RoundingMode.FLOOR).toDouble()
+        val frac = t.n.toDouble() - whole
         val r = findRoot(::f, fdouble = { r ->
-            val n = t.n.toDouble()
-            val v = if (r == 0.0) 1.0 else (1 + r).pow(-n)
-            val a = if (r == 0.0) n else (1 - v) / r * if (t.begin) 1 + r else 1.0
-            t.pv.toDouble() + t.pmt.toDouble() * a + t.fv.toDouble() * v
+            val v = if (r == 0.0) 1.0 else (1 + r).pow(-whole)
+            val a = if (r == 0.0) whole else (1 - v) / r * if (t.begin) 1 + r else 1.0
+            val odd = if (frac == 0.0) 1.0 else if (t.compoundOdd) (1 + r).pow(frac) else 1 + r * frac
+            t.pv.toDouble() * odd + t.pmt.toDouble() * a + t.fv.toDouble() * v
         }) ?: throw CalcError(5)
         return r.multiply(HUNDRED, WORK)
     }
@@ -131,7 +152,7 @@ object Finance {
             add(flows[0].toDouble())
             for (j in 1 until flows.size) repeat(counts[j]) { add(flows[j].toDouble()) }
         }
-        if (expanded.none { it > 0 } || expanded.none { it < 0 }) throw CalcError(3)
+        if (expanded.none { it > 0 } || expanded.none { it < 0 }) throw CalcError(7)
         val r = findRoot({ npvAt(it, flows, counts) }, fdouble = { r ->
             var s = 0.0
             var d = 1.0
@@ -229,7 +250,7 @@ object Finance {
         var principal = ZERO
         for (k in 0 until payments) {
             val firstBeginPeriod = begin && periodsDone + k == 0
-            val periodInterest = if (firstBeginPeriod) ZERO else roundTo(balance.multiply(r, WORK).negate())
+            val periodInterest = if (firstBeginPeriod) ZERO else roundTo(balance.multiply(r, WORK).abs()).multiply(BigDecimal.valueOf(pmt.signum().toLong()))
             val periodPrincipal = pmt.subtract(periodInterest, WORK)
             interest = interest.add(periodInterest, WORK)
             principal = principal.add(periodPrincipal, WORK)
@@ -307,6 +328,9 @@ object Finance {
     /** The coupon period containing [settlement], and how many coupons remain. */
     private fun couponWindow(settlement: LocalDate, maturity: LocalDate): CouponWindow {
         if (!settlement.isBefore(maturity)) throw CalcError(8)
+        if (settlement.plusYears(500).isBefore(maturity)) throw CalcError(8)
+        // The 12c rejects maturities with no coupon date six months earlier (e.g. the 31st).
+        if (maturity.minusMonths(6).dayOfMonth != maturity.dayOfMonth) throw CalcError(8)
         var k = 1L
         while (maturity.minusMonths(6 * k).isAfter(settlement)) k++
         return CouponWindow(maturity.minusMonths(6 * k), maturity.minusMonths(6 * (k - 1)), k.toInt())
