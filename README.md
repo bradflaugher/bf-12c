@@ -3,9 +3,21 @@
 A hyper-modern Android calculator and homage to the HP-12C. Real RPN, the
 real 12c keyboard, 34 significant digits, and an 80s green-screen display.
 
-![Landscape](docs/screenshots/landscape.png)
+<div align="center">
+  <img src="docs/screenshots/landscape.png" alt="Landscape: the full 12c keyboard">
+  <p><em><b>Landscape</b> — the real 4×10 keyboard, key for key</em></p>
+</div>
 
-<img src="docs/screenshots/portrait.png" width="300" alt="Portrait"> <img src="docs/screenshots/menu.png" width="500" alt="System menu">
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/screenshots/portrait.png" alt="Portrait layout"><p><em><b>Portrait</b> · folded</em></p></td>
+    <td align="center" width="25%"><img src="docs/screenshots/program.png" alt="Program mode"><p><em><b>Program mode</b></em></p></td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/f-shift.png" alt="f shift active"><p><em><b>f shift</b> — gold legends light up</em></p>
+      <img src="docs/screenshots/menu.png" alt="System menu"><p><em><b>ON</b> — green-screen system menu</em></p>
+    </td>
+  </tr>
+</table>
 
 ## What it is
 
