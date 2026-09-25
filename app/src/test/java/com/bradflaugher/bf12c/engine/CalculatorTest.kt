@@ -294,7 +294,7 @@ class CalculatorTest {
 
     @Test fun pasteClearsErrorsAndPrefixes() {
         val e = run("1 ENTER 0 /")
-        e.paste(BigDecimal(5))
+        assertEquals(true, e.paste(BigDecimal(5)))
         assertEquals(null, e.error)
         assertClose("5", e.x)
         val p = run("STO")
@@ -306,7 +306,7 @@ class CalculatorTest {
 
     @Test fun pasteOutOfRangeIsError0() {
         val c = run("4")
-        c.paste(BigDecimal("1E+20000"))
+        assertEquals(false, c.paste(BigDecimal("1E+20000")))
         assertEquals(0, c.error)
     }
 
@@ -314,7 +314,7 @@ class CalculatorTest {
         val c = run("f RS 1 + g RDN 0 1 f RS")
         c.press(Key.RS)
         c.step()
-        c.paste(BigDecimal(9))
+        assertEquals(false, c.paste(BigDecimal(9)))
         assertEquals(false, c.running)
         assertEquals(false, c.step())
     }

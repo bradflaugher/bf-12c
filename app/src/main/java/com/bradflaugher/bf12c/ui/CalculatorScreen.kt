@@ -82,10 +82,15 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
     val paste: () -> Unit = {
         scope.launch {
             val text = clipboard.getClipEntry()?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()
-            toast = when {
-                text == null -> "CLIPBOARD EMPTY"
-                vm.paste(text) -> "PASTED"
-                else -> "NOT A NUMBER"
+            toast = if (text == null) {
+                "CLIPBOARD EMPTY"
+            } else {
+                when (vm.paste(text)) {
+                    CalcViewModel.PasteResult.PASTED -> "PASTED"
+                    CalcViewModel.PasteResult.HALTED -> "HALTED"
+                    CalcViewModel.PasteResult.REJECTED -> "NOT PASTED"
+                    CalcViewModel.PasteResult.NOT_A_NUMBER -> "NOT A NUMBER"
+                }
             }
         }
     }

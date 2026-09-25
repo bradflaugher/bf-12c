@@ -65,14 +65,21 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Returns false (and changes nothing) if [text] isn't a number. */
-    fun paste(text: String): Boolean {
-        val value = Format.parseClipboard(text) ?: return false
-        viewModelScope.launch(engine) {
-            calc.paste(value)
+    enum class PasteResult { PASTED, HALTED, REJECTED, NOT_A_NUMBER }
+
+    /** Pastes [text] into X, reporting what actually happened for the UI to confirm. */
+    suspend fun paste(text: String): PasteResult {
+        val value = Format.parseClipboard(text) ?: return PasteResult.NOT_A_NUMBER
+        return withContext(engine) {
+            val wasRunning = calc.running
+            val applied = calc.paste(value)
             commit()
+            when {
+                applied -> PasteResult.PASTED
+                wasRunning -> PasteResult.HALTED
+                else -> PasteResult.REJECTED
+            }
         }
-        return true
     }
 
     fun closeMenu() {

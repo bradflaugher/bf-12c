@@ -186,14 +186,15 @@ class Calculator {
 
     /**
      * Pastes a number into X like a recall: it lifts the stack and, as a fresh
-     * value, is stored (not solved) by a following financial key.
+     * value, is stored (not solved) by a following financial key. Like any key,
+     * a paste only halts a running program. Returns whether the value landed in X.
      */
-    fun paste(value: BigDecimal) {
+    fun paste(value: BigDecimal): Boolean {
         if (running) {
             halt()
-            return
+            return false
         }
-        if (programMode) return
+        if (programMode) return false
         error = null
         message = null
         weekday = null
@@ -201,6 +202,7 @@ class Calculator {
         lastWasFin = false
         finishEntry()
         guarded { pushResult(value) }
+        return error == null
     }
 
     // --- Dispatch --------------------------------------------------------------------
