@@ -31,7 +31,7 @@ object Format {
         val s = x.round(BigMath.MC).stripTrailingZeros()
         val e = BigMath.exponent(s)
         if (s.signum() == 0) return "0"
-        return if (e in MIN_PLAIN_EXPONENT..MAX_PLAIN_INT_DIGITS) s.toPlainString() else sciAll(s)
+        return if (e in MIN_PLAIN_EXPONENT until MAX_PLAIN_INT_DIGITS) s.toPlainString() else sciAll(s)
     }
 
     private fun fix(x: BigDecimal, digits: Int): String {
@@ -68,6 +68,37 @@ object Format {
     }
 
     private fun exp(e: Int) = if (e < 0) "E$e" else "E+$e"
+
+    /** Reads back a [format]ted or [plain] string; null if it is not a number. */
+    fun parse(text: String): BigDecimal? = try {
+        BigDecimal(text.replace(",", ""))
+    } catch (_: NumberFormatException) {
+        null
+    }
+
+    /**
+     * Reads a number copied from somewhere else: tolerates grouping (1,234.5 or
+     * 1 234.5), currency signs, a leading +, a trailing %, the typographic minus
+     * and accounting parentheses for negatives. Null if it isn't one number.
+     */
+    fun parseClipboard(text: String): BigDecimal? {
+        if (text.length > 200) return null
+        var t = text.filterNot { it.isWhitespace() || it in IGNORED_IN_PASTE }
+            .replace('\u2212', '-')
+            .replace('\u2013', '-')
+        var negative = false
+        if (t.length > 2 && t.startsWith("(") && t.endsWith(")")) {
+            negative = true
+            t = t.substring(1, t.length - 1)
+        }
+        t = t.removeSuffix("%").removePrefix("+")
+        if (!PASTE_NUMBER.matches(t)) return null
+        val v = parse(t) ?: return null
+        return if (negative) v.negate() else v
+    }
+
+    private const val IGNORED_IN_PASTE = ",_'$€£¥₹"
+    private val PASTE_NUMBER = Regex("-?(\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d{1,9})?")
 
     /** Adds thousands separators to the integer part of a plain decimal string. */
     fun group(plain: String): String {

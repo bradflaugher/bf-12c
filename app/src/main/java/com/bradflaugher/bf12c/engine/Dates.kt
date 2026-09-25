@@ -12,7 +12,8 @@ object Dates {
     private val MAX = LocalDate.of(4046, 11, 25)
 
     fun decode(x: BigDecimal, dmy: Boolean): LocalDate {
-        if (x.signum() <= 0) throw CalcError(8)
+        // Month and day are at most 31, so anything from 100 up is garbage.
+        if (x.signum() <= 0 || x >= BigDecimal.valueOf(100)) throw CalcError(8)
         val scaled = x.setScale(6, RoundingMode.HALF_UP).movePointRight(6).toBigIntegerExact().toLong()
         val first = (scaled / 1_000_000).toInt()
         val second = ((scaled / 10_000) % 100).toInt()

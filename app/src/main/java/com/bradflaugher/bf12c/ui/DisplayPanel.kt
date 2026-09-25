@@ -170,8 +170,7 @@ fun DisplayPanel(
             }
 
             // Full precision readout whenever the main line is rounded.
-            val plainMain = display.main.replace(",", "")
-            if (booted && !programMode && !display.isError && !display.entering && plainMain != display.full && expanded) {
+            if (booted && display.rounded && expanded) {
                 BasicText(
                     "≡ " + display.full,
                     maxLines = 1,

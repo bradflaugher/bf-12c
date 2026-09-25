@@ -82,9 +82,15 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
     val paste: () -> Unit = {
         scope.launch {
             val text = clipboard.getClipEntry()?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()
-            if (text != null) {
-                vm.paste(text)
-                toast = "PASTED"
+            toast = if (text == null) {
+                "CLIPBOARD EMPTY"
+            } else {
+                when (vm.paste(text)) {
+                    CalcViewModel.PasteResult.PASTED -> "PASTED"
+                    CalcViewModel.PasteResult.HALTED -> "HALTED"
+                    CalcViewModel.PasteResult.REJECTED -> "NOT PASTED"
+                    CalcViewModel.PasteResult.NOT_A_NUMBER -> "NOT A NUMBER"
+                }
             }
         }
     }
@@ -253,6 +259,6 @@ private val HELP = listOf(
     "Stats: y ENTER x Σ+, then g 0 (x̄), g . (s), g 1 / g 2.",
     "Program: f R/S toggles PRGM. g R↓ nn is GTO nn,",
     "     g R↓ . nn jumps while editing, g − deletes a line.",
-    "Errors: 0 math 2 stats 3 IRR 4 memory 5 fin 6 reg 8 date.",
+    "Errors: 0 math 2 stats 3/7 IRR 4 memory 5 fin 6 reg 8 date.",
     "Memory is continuous: everything survives restarts.",
 )

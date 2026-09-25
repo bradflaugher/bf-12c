@@ -217,7 +217,7 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, mod
             .border(1.dp, Brush.verticalGradient(listOf(Palette.keyEdge.copy(alpha = 0.9f), Color.Black)), shape)
             .semantics {
                 role = Role.Button
-                contentDescription = key.label
+                contentDescription = listOfNotNull(key.label, key.f?.let { "f $it" }, key.g?.let { "g $it" }).joinToString(", ")
                 onClick { onKey(key); true }
             }
             .pointerInput(key) {

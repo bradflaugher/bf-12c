@@ -72,6 +72,14 @@ kotlin {
     jvmToolchain(21)
 }
 
+// Show failing assertions in the build log (CI included), not just in the HTML report.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

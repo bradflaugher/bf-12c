@@ -5,6 +5,7 @@ import java.math.BigInteger
 import java.math.MathContext
 import java.math.RoundingMode
 import kotlin.math.ln as dln
+import kotlin.math.log10
 
 /** Arbitrary-precision helpers. Results are rounded to [MC]; work is done at [WORK]. */
 object BigMath {
@@ -100,15 +101,31 @@ object BigMath {
             if (x.signum() < 0) throw CalcError(0)
             return BigDecimal.ZERO
         }
-        if (isInteger(x) && x.abs() <= BigDecimal.valueOf(999_999_999)) {
+        val integral = isInteger(x)
+        if (integral && x.abs() <= BigDecimal.valueOf(999_999_999)) {
             val n = x.intValueExact()
-            // Guard against results far beyond the register range before multiplying.
-            val magnitude = (exponent(y) + 1).toLong() * n
-            if (magnitude > MAX_EXPONENT + 1 && y.abs() > BigDecimal.ONE) throw CalcError(0)
+            // Estimate log10|y^n| first: results clearly past the register range overflow,
+            // results clearly below it underflow to zero, and neither is worth multiplying
+            // out. The Double estimate is only good to ~1E-12 here, so keep a whole decade
+            // of margin and let the caller's exact range check decide the boundary.
+            val magnitude = n * log10Abs(y)
+            if (magnitude > MAX_EXPONENT + 2) throw CalcError(0)
+            if (magnitude < -(MAX_EXPONENT + 3)) return BigDecimal.ZERO
             return y.pow(n, WORK)
         }
-        if (y.signum() < 0) throw CalcError(0)
+        if (y.signum() < 0) {
+            // A negative base only has a real power for integral exponents.
+            if (!integral) throw CalcError(0)
+            val r = exp(x.multiply(ln(y.negate()), WORK))
+            return if (x.toBigInteger().testBit(0)) r.negate() else r
+        }
         return exp(x.multiply(ln(y), WORK))
+    }
+
+    /** log10|x| to Double precision, for any register value (x ≠ 0). */
+    private fun log10Abs(x: BigDecimal): Double {
+        val e = exponent(x)
+        return e + log10(x.movePointLeft(e).abs().toDouble())
     }
 
     fun factorial(x: BigDecimal): BigDecimal {

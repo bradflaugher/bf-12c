@@ -79,7 +79,7 @@ class Calculator {
     fun press(key: Key) {
         if (running) {
             // Any key halts a running program, as on the real thing.
-            running = false
+            halt()
             return
         }
         if (error != null) {
@@ -102,15 +102,24 @@ class Calculator {
     fun step(): Boolean {
         if (!running) return false
         if (pc >= program.size) {
+            // Running off the end is an implicit GTO 00 and halt.
             pc = 0
-            running = false
+            halt()
             return false
         }
         pc++
         val line = program[pc - 1]
         guarded { for (k in line) execute(k) }
         if (error != null) running = false
+        // Digits keyed across consecutive lines form one number; a halt ends it.
+        if (!running) finishEntry()
         return running
+    }
+
+    private fun halt() {
+        running = false
+        pauseRequested = false
+        finishEntry()
     }
 
     fun display(): Display {
@@ -125,6 +134,7 @@ class Calculator {
             pending = prefixLabel(),
         )
         val stackText = stack.map { Format.format(it, mode) }
+        val showingX = error == null && !(running && !pauseRequested) && !programMode && message == null && entry == null
         val main = when {
             error != null -> "Error ${error}"
             running && !pauseRequested -> "running"
@@ -143,13 +153,14 @@ class Calculator {
             isError = error != null,
             programListing = if (programMode) programListing() else emptyList(),
             entering = entry != null && error == null && !programMode && !running && message == null,
+            rounded = showingX && Format.parse(stackText[0])?.compareTo(x) != 0,
         )
     }
 
     /** The g ← key, also bound to swiping the display. In program mode it deletes the line. */
     fun backspace() {
         if (running) {
-            running = false
+            halt()
             return
         }
         if (error != null) {
@@ -173,11 +184,25 @@ class Calculator {
         pc--
     }
 
-    /** Pastes a number into X as if it were keyed in. */
-    fun paste(value: BigDecimal) {
-        if (programMode) return
+    /**
+     * Pastes a number into X like a recall: it lifts the stack and, as a fresh
+     * value, is stored (not solved) by a following financial key. Like any key,
+     * a paste only halts a running program. Returns whether the value landed in X.
+     */
+    fun paste(value: BigDecimal): Boolean {
+        if (running) {
+            halt()
+            return false
+        }
+        if (programMode) return false
+        error = null
+        message = null
+        weekday = null
+        prefix = Prefix.None
+        lastWasFin = false
         finishEntry()
-        pushResult(value)
+        guarded { pushResult(value) }
+        return error == null
     }
 
     // --- Dispatch --------------------------------------------------------------------
@@ -277,6 +302,8 @@ class Calculator {
                     running = true
                     step()
                     running = false
+                    pauseRequested = false
+                    finishEntry()
                 }
             }
             Key.ON -> Unit // Handled by the host (menu).
@@ -427,14 +454,18 @@ class Calculator {
     }
 
     private fun pushResult(v: BigDecimal) {
+        val r = fit(v) // before lifting: a rejected value must not disturb the stack
         if (liftEnabled) lift()
-        x = v
+        x = r
         liftEnabled = true
     }
 
+    /** Rounds to register precision and range-checks before anything is modified. */
+    private fun fit(v: BigDecimal): BigDecimal = BigMath.checkRange(v.round(BigMath.MC))
+
     private inline fun unary(op: (BigDecimal) -> BigDecimal) {
         finishEntry()
-        val r = op(x)
+        val r = fit(op(x))
         lastX = x
         x = r
         liftEnabled = true
@@ -442,7 +473,7 @@ class Calculator {
 
     private inline fun binary(op: (BigDecimal, BigDecimal) -> BigDecimal) {
         finishEntry()
-        val r = op(y, x)
+        val r = fit(op(y, x))
         lastX = x
         drop()
         x = r
@@ -452,7 +483,7 @@ class Calculator {
     /** Percent keys keep Y (the base) in place. */
     private inline fun percent(op: (BigDecimal, BigDecimal) -> BigDecimal) {
         finishEntry()
-        val r = op(y, x)
+        val r = fit(op(y, x))
         lastX = x
         x = r
         liftEnabled = true
@@ -475,7 +506,7 @@ class Calculator {
                     Key.MUL -> regs[idx].multiply(x, WORK)
                     Key.DIV -> BigMath.divide(regs[idx], x)
                     else -> x
-                }.round(BigMath.MC).let(BigMath::checkRange)
+                }.let(::fit)
                 liftEnabled = true
             }
             key == Key.DOT && !p.dot -> prefix = p.copy(dot = true)
@@ -569,7 +600,7 @@ class Calculator {
                 Key.PV -> Finance.solvePv(tvm())
                 Key.PMT -> Finance.solvePmt(tvm())
                 else -> Finance.solveFv(tvm())
-            }.round(BigMath.MC)
+            }.let(::fit)
             fin[idx] = result
             x = result
             liftEnabled = true
@@ -604,7 +635,7 @@ class Calculator {
     private fun npv() {
         finishEntry()
         val (cf, counts) = flows()
-        val v = Finance.npv(fin[I], cf, counts).round(BigMath.MC)
+        val v = fit(Finance.npv(fin[I], cf, counts))
         fin[PV] = v
         x = v
         liftEnabled = true
@@ -613,7 +644,7 @@ class Calculator {
     private fun irr() {
         finishEntry()
         val (cf, counts) = flows()
-        val v = Finance.irr(cf, counts).round(BigMath.MC)
+        val v = fit(Finance.irr(cf, counts))
         fin[I] = v
         x = v
         liftEnabled = true
@@ -632,33 +663,37 @@ class Calculator {
         val done = fin[N]
         val periodsDone = if (BigMath.isInteger(done) && done.signum() >= 0) done.toInt() else 0
         val a = Finance.amortize(count.toInt(), periodsDone, fin[I], fin[PV], fin[PMT], begin, ::roundToDisplay)
-        fin[PV] = a.balance.round(BigMath.MC)
-        fin[N] = done.add(count)
+        val interest = fit(a.interest)
+        val principal = fit(a.principal)
+        fin[PV] = fit(a.balance)
+        fin[N] = fit(done.add(count))
         // T = old Y, Z = payments, Y = principal, X = interest.
         stack[3] = stack[1]
         stack[2] = count
-        stack[1] = a.principal.round(BigMath.MC)
-        x = a.interest
+        stack[1] = principal
+        x = interest
         liftEnabled = true
     }
 
     private fun simpleInterest() {
         finishEntry()
         val s = Finance.simpleInterest(fin[N], fin[I], fin[PV])
+        val on360 = fit(s.on360)
+        val on365 = fit(s.on365)
         stack[3] = x
-        stack[2] = s.on365.round(BigMath.MC)
-        stack[1] = s.principal.round(BigMath.MC)
-        x = s.on360
+        stack[2] = on365
+        stack[1] = fit(s.principal)
+        x = on360
         liftEnabled = true
     }
 
     private fun depreciation(method: Finance.Depreciation) {
         finishEntry()
-        val (d, remaining) = Finance.depreciate(method, x, fin[PV], fin[FV], fin[N], fin[I])
+        val (d, remaining) = Finance.depreciate(method, x, fin[PV], fin[FV], fin[N], fin[I]).let { fit(it.first) to fit(it.second) }
         // T = old Y, Z = year, Y = remaining depreciable value, X = depreciation.
         stack[3] = stack[1]
         stack[2] = x
-        stack[1] = remaining.round(BigMath.MC)
+        stack[1] = remaining
         x = d
         liftEnabled = true
     }
@@ -668,12 +703,14 @@ class Calculator {
         val settlement = Dates.decode(y, dmy)
         val maturity = Dates.decode(x, dmy)
         val p = Finance.bondPrice(fin[I], fin[PMT], settlement, maturity)
+        val price = fit(p.price)
+        val accrued = fit(p.accrued)
         // T = settlement, Z = maturity, Y = accrued interest, X = price.
         stack[3] = y
         stack[2] = x
-        fin[PV] = p.price.round(BigMath.MC)
-        y = p.accrued.round(BigMath.MC)
-        x = p.price
+        fin[PV] = price
+        y = accrued
+        x = price
         liftEnabled = true
     }
 
@@ -681,7 +718,7 @@ class Calculator {
         finishEntry()
         val settlement = Dates.decode(y, dmy)
         val maturity = Dates.decode(x, dmy)
-        val r = Finance.bondYield(fin[PV], fin[PMT], settlement, maturity).round(BigMath.MC)
+        val r = fit(Finance.bondYield(fin[PV], fin[PMT], settlement, maturity))
         fin[I] = r
         lift()
         x = r
@@ -712,12 +749,16 @@ class Calculator {
         val s = BigDecimal.valueOf(sign.toLong())
         val xv = x
         val yv = y
-        regs[1] = regs[1].add(s)
-        regs[2] = regs[2].add(s.multiply(xv), WORK).round(BigMath.MC)
-        regs[3] = regs[3].add(s.multiply(xv.multiply(xv, WORK)), WORK).round(BigMath.MC)
-        regs[4] = regs[4].add(s.multiply(yv), WORK).round(BigMath.MC)
-        regs[5] = regs[5].add(s.multiply(yv.multiply(yv, WORK)), WORK).round(BigMath.MC)
-        regs[6] = regs[6].add(s.multiply(xv.multiply(yv, WORK)), WORK).round(BigMath.MC)
+        // All six sums are range-checked before any is written: no half-accumulated point.
+        val sums = listOf(
+            regs[1].add(s),
+            regs[2].add(s.multiply(xv), WORK),
+            regs[3].add(s.multiply(xv.multiply(xv, WORK)), WORK),
+            regs[4].add(s.multiply(yv), WORK),
+            regs[5].add(s.multiply(yv.multiply(yv, WORK)), WORK),
+            regs[6].add(s.multiply(xv.multiply(yv, WORK)), WORK),
+        ).map(::fit)
+        sums.forEachIndexed { k, v -> regs[k + 1] = v }
         lastX = xv
         x = regs[1]
         liftEnabled = false
@@ -752,7 +793,8 @@ class Calculator {
     private fun weightedMean() {
         finishEntry()
         count()
-        pushResult(BigMath.divide(regs[6], regs[2]))
+        if (regs[2].signum() == 0) throw CalcError(2)
+        pushResult(regs[6].divide(regs[2], WORK))
     }
 
     private fun estimate(xFromY: Boolean) {
@@ -769,12 +811,14 @@ class Calculator {
         if (denom.signum() <= 0) throw CalcError(2)
         val r = sp.divide(BigMath.sqrt(denom), WORK)
         val input = x
-        val est = if (xFromY) {
-            if (b.signum() == 0) throw CalcError(2)
-            BigMath.divide(input.subtract(a, WORK), b)
-        } else {
-            a.add(b.multiply(input, WORK), WORK)
-        }
+        val est = fit(
+            if (xFromY) {
+                if (b.signum() == 0) throw CalcError(2)
+                BigMath.divide(input.subtract(a, WORK), b)
+            } else {
+                a.add(b.multiply(input, WORK), WORK)
+            },
+        )
         lastX = input
         x = r
         lift()
@@ -860,30 +904,44 @@ class Calculator {
         put("pc", pc.toString())
     }
 
+    /** Restores [save] output. Corrupt state is ignored as a whole, never half-applied. */
     fun restore(state: Map<String, String>) {
-        runCatching {
-            state["stack"]?.split(";")?.map(::BigDecimal)?.forEachIndexed { k, v -> if (k < 4) stack[k] = v }
-            state["lastX"]?.let { lastX = BigDecimal(it) }
-            state["regs"]?.split(";")?.map(::BigDecimal)?.forEachIndexed { k, v -> if (k < REGISTERS) regs[k] = v }
-            state["nj"]?.split(";")?.map(String::toInt)?.forEachIndexed { k, v -> if (k < REGISTERS) nj[k] = v }
-            state["fin"]?.split(";")?.map(::BigDecimal)?.forEachIndexed { k, v -> if (k < 5) fin[k] = v }
+        val snapshot = save()
+        if (!apply(state)) apply(snapshot)
+    }
+
+    private fun apply(state: Map<String, String>): Boolean {
+        try {
+            state["stack"]?.let { v -> numbers(v).forEachIndexed { k, d -> if (k < 4) stack[k] = d } }
+            state["lastX"]?.let { lastX = numbers(it).single() }
+            state["regs"]?.let { v -> numbers(v).forEachIndexed { k, d -> if (k < REGISTERS) regs[k] = d } }
+            state["nj"]?.let { v -> v.split(";").map(String::toInt).forEachIndexed { k, n -> if (k < REGISTERS) nj[k] = n.coerceIn(1, 99) } }
+            state["fin"]?.let { v -> numbers(v).forEachIndexed { k, d -> if (k < 5) fin[k] = d } }
             begin = state["begin"] == "true"
             dmy = state["dmy"] == "true"
             compoundOdd = state["compoundOdd"] == "true"
             mode = state["mode"]?.let { m ->
                 when {
-                    m.startsWith("fix") -> DisplayMode.Fix(m.removePrefix("fix").toInt())
-                    m.startsWith("sci") -> DisplayMode.Sci(m.removePrefix("sci").toInt())
+                    m.startsWith("fix") -> DisplayMode.Fix(m.removePrefix("fix").toInt().coerceIn(0, 9))
+                    m.startsWith("sci") -> DisplayMode.Sci(m.removePrefix("sci").toInt().coerceIn(1, 9))
                     else -> DisplayMode.All
                 }
             } ?: DisplayMode.All
+            val lines = state["program"]?.takeIf { it.isNotEmpty() }?.split(";")?.map { line ->
+                line.split(",").map { Key.valueOf(it) }
+            }.orEmpty()
+            require(lines.size <= MAX_LINES && lines.all { it.isNotEmpty() && ProgramParser.parse(it) == ProgramParser.Outcome.Complete })
             program.clear()
-            state["program"]?.takeIf { it.isNotEmpty() }?.split(";")?.forEach { line ->
-                program += line.split(",").map { Key.valueOf(it) }
-            }
+            program += lines
             pc = state["pc"]?.toInt()?.coerceIn(0, program.size) ?: 0
+            return true
+        } catch (_: Exception) {
+            return false
         }
     }
+
+    /** Parses saved registers with the same rounding and range check as live results. */
+    private fun numbers(v: String) = v.split(";").map { fit(BigDecimal(it)) }
 
     private sealed interface Prefix {
         data object None : Prefix
@@ -932,4 +990,6 @@ data class Display(
     val isError: Boolean,
     val programListing: List<String>,
     val entering: Boolean,
+    /** The main line shows X rounded to the display mode (so the full value is worth showing). */
+    val rounded: Boolean = false,
 )

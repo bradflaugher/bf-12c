@@ -10,6 +10,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bradflaugher.bf12c.engine.Calculator
 import com.bradflaugher.bf12c.engine.Display
+import com.bradflaugher.bf12c.engine.Format
 import com.bradflaugher.bf12c.engine.Key
 import com.bradflaugher.bf12c.ui.Phosphor
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +18,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
-import java.math.BigDecimal
 
 /**
  * Owns the engine. All engine access happens on one background thread so heavy
@@ -65,11 +65,20 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun paste(text: String) {
-        val value = text.trim().replace(",", "").toBigDecimalOrNull() ?: return
-        viewModelScope.launch(engine) {
-            calc.paste(value)
+    enum class PasteResult { PASTED, HALTED, REJECTED, NOT_A_NUMBER }
+
+    /** Pastes [text] into X, reporting what actually happened for the UI to confirm. */
+    suspend fun paste(text: String): PasteResult {
+        val value = Format.parseClipboard(text) ?: return PasteResult.NOT_A_NUMBER
+        return withContext(engine) {
+            val wasRunning = calc.running
+            val applied = calc.paste(value)
             commit()
+            when {
+                applied -> PasteResult.PASTED
+                wasRunning -> PasteResult.HALTED
+                else -> PasteResult.REJECTED
+            }
         }
     }
 
@@ -123,6 +132,4 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
     private fun decode(text: String) = text.lineSequence()
         .mapNotNull { line -> line.indexOf('=').takeIf { it > 0 }?.let { line.substring(0, it) to line.substring(it + 1) } }
         .toMap()
-
-    private fun String.toBigDecimalOrNull(): BigDecimal? = runCatching { BigDecimal(this) }.getOrNull()
 }
