@@ -9,7 +9,8 @@ internal class Entry {
     private var exponent: StringBuilder? = null
     private var exponentNegative = false
 
-    private val significantDigits get() = mantissa.count { it.isDigit() }
+    /** Digits that count toward the register's precision: leading zeros don't. */
+    private val significantDigits get() = mantissa.trimStart('0', '.').count { it.isDigit() }
 
     fun digit(d: Int) {
         val e = exponent

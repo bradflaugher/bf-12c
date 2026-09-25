@@ -34,6 +34,13 @@ Like Blauncher, this project supports **only the latest stable everything**:
 - `ui/` — Compose: `Keyboard.kt` (landscape 4×10 and portrait folded
   layouts), `DisplayPanel.kt` (CRT display), `CalculatorScreen.kt`
   (screen, brand plate, ON-key system menu), `Theme.kt`.
+- `app/src/test/` — JVM unit tests. `engine/Keystrokes.kt` is the shared
+  keystroke DSL; `HandbookTest` (owner's-handbook examples),
+  `CalculatorTest` (keys, rules, regressions), `PropertyTest` (seeded
+  identities and the keystroke fuzzer), `FormatTest`, `ProgramParserTest`,
+  and `InvariantsTest` (enforces the invariants below).
+- `tools/icon/gen_icon.py` — generates the adaptive launcher icon
+  (`res/drawable/ic_launcher_*.xml`). Edit the script, not the XML.
 
 ## Behavioral rules
 
@@ -45,7 +52,11 @@ Like Blauncher, this project supports **only the latest stable everything**:
   when pressed right after another financial key — the 12c rule.
 - Keep the engine pure: all Android code lives outside `engine/`.
 - Every engine change gets a test in `app/src/test/.../CalculatorTest.kt`
-  (scripts are typed with the tiny keystroke DSL there).
+  (scripts are typed with the tiny keystroke DSL in `Keystrokes.kt`).
+- Every stored result is rounded and range-checked (`fit`) before any
+  register is written, so an error never leaves the stack half-updated.
+- No keystroke may stall the engine: loops over user-sized counts are capped
+  (AMORT, DB) or replaced by closed forms (SOYD). The fuzzer checks this.
 
 ## Invariants
 
@@ -58,6 +69,9 @@ Like Blauncher, this project supports **only the latest stable everything**:
 ```sh
 ./gradlew lint test assembleDebug
 ```
+
+`.github/workflows/ci.yml` runs the unit tests and lint as
+separate checks on every pull request and push to `main`.
 
 Every push to `main` builds a signed APK and publishes it as the single
 date-labeled GitHub release `vYYYY.MM.DD.<run>`, deleting all older

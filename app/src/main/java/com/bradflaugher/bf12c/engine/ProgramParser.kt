@@ -55,6 +55,13 @@ object ProgramParser {
         var rest = args
         val head = rest.firstOrNull() ?: return Outcome.Incomplete
         if (head in FIN) return if (rest.size == 1) Outcome.Complete else Outcome.Invalid
+        // STO EEX toggles the C annunciator.
+        if (allowOps && head == Key.EEX) return if (rest.size == 1) Outcome.Complete else Outcome.Invalid
+        // RCL g CFj / RCL g Nj review cash flows.
+        if (!allowOps && head == Key.G) {
+            val k = rest.getOrNull(1) ?: return Outcome.Incomplete
+            return if (rest.size == 2 && (k == Key.PMT || k == Key.FV)) Outcome.Complete else Outcome.Invalid
+        }
         if (allowOps && head in OPS) rest = rest.drop(1)
         if (rest.firstOrNull() == Key.DOT) rest = rest.drop(1)
         val d = rest.firstOrNull() ?: return Outcome.Incomplete
@@ -83,6 +90,7 @@ object ProgramParser {
             first == Key.F -> second!!.f ?: second.label
             first == Key.G && second == Key.RDN -> "GTO " + keys.drop(2).joinToString("") { it.label }
             first == Key.G -> second!!.g ?: second.label
+            first == Key.RCL && second == Key.G -> "RCL " + (keys.getOrNull(2)?.g ?: "g")
             else -> keys.joinToString(" ") { it.label }
         }
     }

@@ -4,41 +4,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.math.BigDecimal
-import java.math.MathContext
 
 class CalculatorTest {
-    private val names = mapOf(
-        "n" to Key.N, "i" to Key.I, "PV" to Key.PV, "PMT" to Key.PMT, "FV" to Key.FV,
-        "CHS" to Key.CHS, "/" to Key.DIV, "yx" to Key.YX, "1/x" to Key.RECIP, "%T" to Key.PCT_T,
-        "D%" to Key.DELTA_PCT, "%" to Key.PCT, "EEX" to Key.EEX, "*" to Key.MUL, "RS" to Key.RS,
-        "SST" to Key.SST, "RDN" to Key.RDN, "SWAP" to Key.SWAP, "CLX" to Key.CLX, "ENTER" to Key.ENTER,
-        "-" to Key.SUB, "f" to Key.F, "g" to Key.G, "STO" to Key.STO, "RCL" to Key.RCL, "." to Key.DOT,
-        "S+" to Key.SIGMA_PLUS, "+" to Key.ADD,
-    )
-
-    /** Types a space-separated script: numbers become digit keystrokes, names become keys. */
-    private fun Calculator.keys(script: String): Calculator {
-        for (token in script.trim().split(Regex("\\s+"))) {
-            val key = names[token]
-            if (key != null) {
-                press(key)
-                continue
-            }
-            require(token.matches(Regex("[0-9.]+"))) { "Unknown token $token" }
-            for (c in token) press(if (c == '.') Key.DOT else Key.digit(c - '0'))
-        }
-        return this
-    }
-
-    private fun run(script: String) = Calculator().keys(script)
-
-    private fun assertClose(expected: String, actual: BigDecimal, digits: Int = 30) {
-        val mc = MathContext(digits)
-        val e = BigDecimal(expected).round(mc)
-        val a = actual.round(mc)
-        assertTrue("expected $expected got $actual", e.compareTo(a) == 0)
-    }
-
     @Test fun basicRpn() {
         assertClose("7", run("3 ENTER 4 +").x)
         assertClose("-1", run("3 ENTER 4 -").x)
@@ -182,8 +149,7 @@ class CalculatorTest {
         val c = run("f RS ENTER * 1 + f RS")
         assertEquals(4, c.program.size)
         // Leaving program mode rewinds to line 00, so R/S runs from line 01.
-        c.keys("7 RS")
-        while (c.step()) Unit
+        c.keys("7").runProgram()
         assertClose("50", c.x)
     }
 
@@ -191,9 +157,7 @@ class CalculatorTest {
         // Count down from X to 0:  001 1  002 -  003 g x=0  004 GTO 06  005 GTO 01  006 R/S
         val c = run("f RS 1 - g CLX g RDN 0 6 g RDN 0 1 RS f RS")
         assertEquals(6, c.program.size)
-        c.keys("f RDN 5 RS")
-        var guard = 0
-        while (c.step() && guard++ < 1000) Unit
+        c.keys("f RDN 5").runProgram()
         assertClose("0", c.x)
     }
 
@@ -243,8 +207,7 @@ class CalculatorTest {
 
     @Test fun keyboardGotoRunsNamedLine() {
         // 001 1  002 +  003 2  004 *  — GTO 03 then R/S runs only "2 *".
-        val c = run("f RS 1 + 2 * f RS 5 g RDN 0 3 RS")
-        while (c.step()) Unit
+        val c = run("f RS 1 + 2 * f RS 5 g RDN 0 3").runProgram()
         assertClose("10", c.x)
     }
 
@@ -259,5 +222,226 @@ class CalculatorTest {
         assertClose("20", c.x)
         c.keys("RCL g FV")
         assertClose("4", c.x)
+    }
+
+    // --- Regressions ---------------------------------------------------------------
+
+    @Test fun integralPowersBeyondTheOldGuard() {
+        // The overflow guard used to reject any base ≥ 1 with a big exponent.
+        assertClose(BigDecimal("1.5").pow(20000).toString(), run("1.5 ENTER 20000 yx").x)
+        assertEquals(null, run("1.5 ENTER 20000 yx").error)
+        val nearOne = run("1.0000001 ENTER 999999999 yx")
+        assertEquals(null, nearOne.error)
+        assertClose("2.688103432454580565047543796723124E+43", nearOne.x, 20)
+        assertEquals(0, run("10 ENTER 10000 yx").error)
+        assertClose("1E+9999", run("10 ENTER 9999 yx").x)
+    }
+
+    @Test fun tinyPowersUnderflowToZero() {
+        val c = run(".001 ENTER 999999999 yx")
+        assertEquals(null, c.error)
+        assertClose("0", c.x)
+        for (script in listOf("2 ENTER 999999999 CHS yx", "2 ENTER 10000000000 CHS yx", ".5 ENTER 1 EEX 12 yx")) {
+            val t = run(script)
+            assertEquals(script, null, t.error)
+            assertClose("0", t.x)
+        }
+    }
+
+    @Test fun negativeBaseWithHugeIntegralExponent() {
+        assertClose("1", run("1 CHS ENTER 1 EEX 10 yx").x)
+        assertClose("-1", run("1 CHS ENTER 10000000001 yx").x)
+        assertEquals(0, run("2 CHS ENTER .5 yx").error)
+    }
+
+    @Test fun overflowLeavesTheStackAlone() {
+        val c = run("7 ENTER 9 EEX 9999 ENTER 10 *")
+        assertEquals(0, c.error)
+        assertClose("10", c.x)
+        assertClose("9E+9999", c.stack[1])
+        assertClose("7", c.stack[2])
+        assertClose("0", c.lastX)
+        val u = run("3 ENTER 9 EEX 9999 g *")
+        assertEquals(0, u.error)
+        assertClose("9E+9999", u.x)
+        assertClose("3", u.stack[1])
+    }
+
+    @Test fun savingsAmortizationEarnsInterest() {
+        // Deposit 1,000 then 100 a period at 1%: the balance grows by interest AND deposits.
+        val c = run("f 2 1 i 1000 CHS PV 100 CHS PMT 1 f n")
+        assertClose("10", c.x)
+        assertClose("-110", c.stack[1])
+        assertClose("-1110", c.fin[2])
+    }
+
+    @Test fun negativeAmortizationGrowsTheLoan() {
+        // Paying less than the interest: principal is negative, the balance rises.
+        val c = run("f 2 1 i 10000 PV 50 CHS PMT 1 f n")
+        assertClose("-100", c.x)
+        assertClose("50", c.stack[1])
+        assertClose("10050", c.fin[2])
+    }
+
+    @Test fun pasteIsStoredByAFinancialKey() {
+        val c = run("100 PV")
+        c.paste(BigDecimal(5))
+        c.keys("PMT")
+        assertEquals(null, c.error)
+        assertClose("5", c.fin[3])
+        assertClose("100", c.fin[2])
+    }
+
+    @Test fun pasteClearsErrorsAndPrefixes() {
+        val e = run("1 ENTER 0 /")
+        e.paste(BigDecimal(5))
+        assertEquals(null, e.error)
+        assertClose("5", e.x)
+        val p = run("STO")
+        p.paste(BigDecimal(8))
+        p.keys("1")
+        assertClose("0", p.regs[1])
+        assertEquals(null, p.display().annunciators.pending)
+    }
+
+    @Test fun pasteOutOfRangeIsError0() {
+        val c = run("4")
+        c.paste(BigDecimal("1E+20000"))
+        assertEquals(0, c.error)
+    }
+
+    @Test fun pasteHaltsARunningProgram() {
+        val c = run("f RS 1 + g RDN 0 1 f RS")
+        c.press(Key.RS)
+        c.step()
+        c.paste(BigDecimal(9))
+        assertEquals(false, c.running)
+        assertEquals(false, c.step())
+    }
+
+    @Test fun weightedMeanWithZeroWeightsIsError2() {
+        assertEquals(2, run("5 ENTER 0 S+ g 6").error)
+    }
+
+    @Test(timeout = 2_000) fun sumOfYearsDigitsIsClosedForm() {
+        // Matches the year-by-year definition...
+        val life = 10
+        val syd = life * (life + 1) / 2
+        var remaining = BigDecimal(9000)
+        for (year in 1..life) {
+            val c = run("10000 PV 1000 FV $life n $year f D%")
+            val d = BigDecimal(9000 * (life - year + 1)).divide(BigDecimal(syd), BigMath.WORK)
+            remaining = remaining.subtract(d)
+            assertTrue(d.subtract(c.x).abs() < BigDecimal("1E-25"))
+            assertTrue(remaining.subtract(c.stack[1]).abs() < BigDecimal("1E-25"))
+        }
+        // ...and a very long life no longer stalls the engine.
+        assertEquals(null, run("10000 PV 1000 FV 1000000000 n 500000000 f D%").error)
+    }
+
+    @Test(timeout = 2_000) fun decliningBalanceRejectsAbsurdYears() {
+        assertEquals(5, run("10000 PV 1000 FV 5 n 200 i 50000000 f %").error)
+        assertClose("0", run("10000 PV 1000 FV 5 n 200 i 50 f %").x)
+    }
+
+    @Test fun programHaltEndsDigitEntry() {
+        val c = run("f RS 1 2 f RS").runProgram()
+        assertClose("12", c.x)
+        c.keys("3")
+        assertClose("3", c.x)
+        assertClose("12", c.stack[1])
+    }
+
+    @Test fun keyHaltEndsDigitEntry() {
+        val c = run("f RS 1 2 g RDN 0 1 f RS")
+        c.press(Key.RS)
+        repeat(5) { c.step() }
+        c.press(Key.CLX) // halts only
+        assertEquals(false, c.running)
+        c.keys("7")
+        assertClose("7", c.x)
+    }
+
+    @Test fun singleStepPauseDoesNotLeak() {
+        val c = run("f RS g RS 1 f RS SST")
+        assertEquals(false, c.pauseRequested)
+        assertEquals(1, c.pc)
+    }
+
+    @Test fun garbageDatesAreError8() {
+        assertEquals(8, run("1 EEX 30 ENTER 5 g CHS").error)
+        assertEquals(8, run("13.012020 ENTER 5 g CHS").error)
+        assertEquals(8, run("2.302020 ENTER 5 g CHS").error)
+        assertEquals(8, run("1.012020 ENTER .5 g CHS").error)
+    }
+
+    @Test fun storeEexIsProgrammable() {
+        val c = run("f RS STO EEX f RS")
+        assertEquals(1, c.program.size)
+        assertEquals(false, c.compoundOdd)
+        c.runProgram()
+        assertEquals(true, c.compoundOdd)
+    }
+
+    @Test fun recallCashFlowsIsProgrammable() {
+        val c = run("f RS RCL g FV RCL g PMT f RS")
+        assertEquals(2, c.program.size)
+        assertEquals("RCL Nⱼ", ProgramParser.mnemonic(c.program[0]))
+        assertEquals("45 43 15", ProgramParser.codes(c.program[0]))
+        assertEquals("RCL CFⱼ", ProgramParser.mnemonic(c.program[1]))
+        c.keys("100 CHS g PV 30 g PMT 4 g FV").runProgram()
+        assertClose("30", c.x)
+        assertClose("4", c.stack[1])
+    }
+
+    @Test fun roundedFlagOnlyWhenDigitsAreHidden() {
+        assertEquals(false, run("f 2 1234 ENTER").display().rounded)
+        assertEquals(true, run("f 2 1 ENTER 3 /").display().rounded)
+        assertEquals(false, run("1 ENTER 4 /").display().rounded)
+        assertEquals(false, run("f 2 1 ENTER 3").display().rounded) // still typing
+        assertEquals(false, run("1 ENTER 0 /").display().rounded)
+        assertEquals(false, run("f 2 1 ENTER 3 / f RS").display().rounded)
+    }
+
+    @Test fun restoreRejectsCorruptStateWholesale() {
+        val c = run("f 4 3.25 STO 9 12 n f RS 1 + f RS 42")
+        val before = c.save()
+        c.restore(before + mapOf("stack" to "1;2;oops;4"))
+        assertEquals(before, c.save())
+        c.restore(before + mapOf("program" to "STO"))
+        assertEquals(before, c.save())
+        c.restore(before + mapOf("program" to "NOT_A_KEY"))
+        assertEquals(before, c.save())
+        c.restore(before + mapOf("regs" to "1;;2"))
+        assertEquals(before, c.save())
+    }
+
+    @Test fun restoreClampsOutOfRangeSettings() {
+        val c = Calculator().apply { restore(mapOf("mode" to "fix42", "nj" to "0;500", "pc" to "77")) }
+        assertEquals(DisplayMode.Fix(9), c.mode)
+        assertEquals(1, c.nj[0])
+        assertEquals(99, c.nj[1])
+        assertEquals(0, c.pc)
+    }
+
+    @Test fun statisticsOverflowIsError0AndAtomic() {
+        val c = run("1 EEX 6000 ENTER S+")
+        assertEquals(0, c.error)
+        for (r in 1..6) assertClose("0", c.regs[r])
+    }
+
+    @Test fun everyStoredValueIsInRange() {
+        // Values that used to slip past the X range check into other registers.
+        val limit = BigDecimal("1E+10000")
+        for (script in listOf("1 EEX 6000 ENTER S+", "1 EEX 9999 g n", "9 EEX 9999 STO 1 9 STO * 1")) {
+            val c = run(script)
+            for (v in c.stack + c.regs + c.fin) assertTrue("$script left $v", v.abs() < limit)
+        }
+    }
+
+    @Test fun leadingZerosDoNotUsePrecision() {
+        val ones = "1".repeat(34)
+        val c = run(".000000$ones")
+        assertEquals(BigDecimal("0.000000$ones"), c.x)
     }
 }

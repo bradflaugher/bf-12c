@@ -195,6 +195,8 @@ object Finance {
         }
         var (lo, hi) = bracket ?: return null
         var flo = fdouble(lo)
+        // The scan landed exactly on the root: keep it rather than bisecting away.
+        if (flo == 0.0) hi = lo
         repeat(80) {
             val mid = (lo + hi) / 2
             val fm = fdouble(mid)
@@ -251,11 +253,15 @@ object Finance {
         var principal = ZERO
         for (k in 0 until payments) {
             val firstBeginPeriod = begin && periodsDone + k == 0
-            val periodInterest = if (firstBeginPeriod) ZERO else roundTo(balance.multiply(r, WORK).abs()).multiply(BigDecimal.valueOf(pmt.signum().toLong()))
+            // Interest accrues against the balance: owed on a loan (PV > 0), earned on
+            // savings (PV < 0). Payments then reduce or grow the balance.
+            val periodInterest = if (firstBeginPeriod) ZERO else roundTo(balance.multiply(r, WORK).negate())
             val periodPrincipal = pmt.subtract(periodInterest, WORK)
             interest = interest.add(periodInterest, WORK)
             principal = principal.add(periodPrincipal, WORK)
-            balance = balance.add(periodPrincipal, WORK)
+            // Overflow now: a runaway balance would otherwise grow without bound
+            // (and rounding it to the display would expand millions of digits).
+            balance = BigMath.checkRange(balance.add(periodPrincipal, WORK))
         }
         return Amort(interest, principal, balance)
     }
@@ -287,7 +293,6 @@ object Finance {
         factorPercent: BigDecimal,
     ): Pair<BigDecimal, BigDecimal> {
         if (!BigMath.isInteger(year) || year.signum() <= 0 || life.signum() <= 0) throw CalcError(5)
-        val j = year.toInt()
         val depreciable = cost.subtract(salvage, WORK)
         when (method) {
             Depreciation.SL -> {
@@ -297,21 +302,20 @@ object Finance {
             }
             Depreciation.SOYD -> {
                 if (year > life) return ZERO to ZERO
+                // Year j takes (life − j + 1) / SYD; the first j years take
+                // (j·life − j(j−1)/2) / SYD. Closed form, so a long life can't stall.
                 val sum = life.multiply(life.add(ONE), WORK).divide(BigMath.TWO, WORK)
-                var remaining = depreciable
-                var d = ZERO
-                for (k in 1..j) {
-                    d = depreciable.multiply(life.subtract(BigDecimal.valueOf(k.toLong()), WORK).add(ONE), WORK)
-                        .divide(sum, WORK)
-                    remaining = remaining.subtract(d, WORK)
-                }
-                return d to remaining
+                val d = depreciable.multiply(life.subtract(year, WORK).add(ONE), WORK).divide(sum, WORK)
+                val taken = year.multiply(life, WORK)
+                    .subtract(year.multiply(year.subtract(ONE), WORK).divide(BigMath.TWO, WORK), WORK)
+                return d to depreciable.subtract(depreciable.multiply(taken, WORK).divide(sum, WORK), WORK)
             }
             Depreciation.DB -> {
+                if (year > MAX_DB_YEAR) throw CalcError(5)
                 val rate = factorPercent.divide(HUNDRED, WORK).divide(life, WORK)
                 var book = cost
                 var d = ZERO
-                for (k in 1..j) {
+                for (k in 1..year.toInt()) {
                     d = book.multiply(rate, WORK)
                     val floor = book.subtract(salvage, WORK)
                     if (d > floor) d = floor.max(ZERO)
@@ -321,6 +325,9 @@ object Finance {
             }
         }
     }
+
+    /** DB walks year by year; like AMORT, cap the walk so a typo can't stall the engine. */
+    private val MAX_DB_YEAR = BigDecimal.valueOf(100_000)
 
     // --- Bonds (semiannual coupons, actual/actual) -------------------------------------
 
