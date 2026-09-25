@@ -450,10 +450,30 @@ class CalculatorTest {
         assertEquals(BigDecimal("0.000000$ones"), c.x)
     }
 
-    @Test(timeout = 2_000) fun leadingZerosAreBounded() {
-        // Endless zeros stop growing the entry; the digit after them is ignored.
-        val c = run("." + "0".repeat(5_000) + "7")
+    @Test(timeout = 10_000) fun leadingZerosAreBoundedButKeepTheRange() {
+        // Any representable small number can still be keyed digit by digit...
+        assertClose("1E-134", run("." + "0".repeat(133) + "1").x)
+        val deep = run("." + "0".repeat(9_990) + "7")
+        assertClose("7E-9991", deep.x)
+        assertTrue("long entries are abbreviated", deep.display().main.length <= 40)
+        // ...but endless zeros stop growing the entry once the value would underflow.
+        val c = run("." + "0".repeat(12_000) + "7")
         assertClose("0", c.x)
-        assertTrue(c.display().main.length < 200)
+        assertTrue(c.display().main.length <= 40)
+    }
+
+    @Test fun rejectedPasteLeavesTheStackAlone() {
+        val c = run("1 ENTER 2 ENTER 3 ENTER 4")
+        assertEquals(false, c.paste(BigDecimal("1E+20000")))
+        assertEquals(0, c.error)
+        assertEquals(listOf("4", "3", "2", "1"), c.stack.map { it.toPlainString() })
+    }
+
+    @Test fun powerRightAtTheOverflowBoundary() {
+        // The Double magnitude estimate says 10000.0000000006; the exact value fits.
+        val c = run("1.000025584577407976239215124624357 ENTER 900001009 yx")
+        assertEquals(null, c.error)
+        assertTrue(c.x < BigDecimal("1E+10000"))
+        assertTrue(c.x > BigDecimal("9.9E+9999"))
     }
 }

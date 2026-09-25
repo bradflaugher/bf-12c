@@ -454,8 +454,9 @@ class Calculator {
     }
 
     private fun pushResult(v: BigDecimal) {
+        val r = fit(v) // before lifting: a rejected value must not disturb the stack
         if (liftEnabled) lift()
-        x = v
+        x = r
         liftEnabled = true
     }
 

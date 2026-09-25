@@ -104,11 +104,13 @@ object BigMath {
         val integral = isInteger(x)
         if (integral && x.abs() <= BigDecimal.valueOf(999_999_999)) {
             val n = x.intValueExact()
-            // Estimate log10|y^n| first: results past the register range overflow,
-            // results below it underflow to zero, and neither is worth multiplying out.
+            // Estimate log10|y^n| first: results clearly past the register range overflow,
+            // results clearly below it underflow to zero, and neither is worth multiplying
+            // out. The Double estimate is only good to ~1E-12 here, so keep a whole decade
+            // of margin and let the caller's exact range check decide the boundary.
             val magnitude = n * log10Abs(y)
-            if (magnitude > MAX_EXPONENT + 1) throw CalcError(0)
-            if (magnitude < -(MAX_EXPONENT + 2)) return BigDecimal.ZERO
+            if (magnitude > MAX_EXPONENT + 2) throw CalcError(0)
+            if (magnitude < -(MAX_EXPONENT + 3)) return BigDecimal.ZERO
             return y.pow(n, WORK)
         }
         if (y.signum() < 0) {

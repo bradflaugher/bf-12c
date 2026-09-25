@@ -22,14 +22,18 @@ internal class Entry {
         }
         // Leading zeros don't count toward precision, but the buffer stays bounded:
         // past this many characters the value would underflow to zero anyway.
+        // (A trailing digit there would be about 1E-9999; anything above is keyable.)
         if (significantDigits >= BigMath.DIGITS || mantissa.length >= MAX_CHARS) return
         if (mantissa.toString() == "0") mantissa.clear()
         mantissa.append(d)
     }
 
     private companion object {
-        /** Enough for 0.000…(99 zeros)… plus all 34 significant digits. */
-        const val MAX_CHARS = BigMath.DIGITS + 101
+        /** "0." plus every leading zero down to the register's smallest exponent, plus 34 digits. */
+        const val MAX_CHARS = 2 + BigMath.MAX_EXPONENT + BigMath.DIGITS
+
+        /** Longer entries show their start and end around an ellipsis. */
+        const val SHOWN_CHARS = 40
     }
 
     fun dot() {
@@ -75,7 +79,9 @@ internal class Entry {
 
     /** What the display shows while typing: grouped digits and a live exponent field. */
     fun text(): String {
-        val m = mantissa.toString().ifEmpty { "0" }
+        val m = mantissa.toString().ifEmpty { "0" }.let {
+            if (it.length > SHOWN_CHARS) it.take(4) + "…" + it.takeLast(SHOWN_CHARS - 5) else it
+        }
         val sign = if (negative) "-" else ""
         val e = exponent ?: return sign + Format.group(m)
         val exp = e.toString().padStart(2, '0')
