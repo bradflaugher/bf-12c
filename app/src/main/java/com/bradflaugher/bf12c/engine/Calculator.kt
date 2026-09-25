@@ -912,7 +912,7 @@ class Calculator {
     private fun apply(state: Map<String, String>): Boolean {
         try {
             state["stack"]?.let { v -> numbers(v).forEachIndexed { k, d -> if (k < 4) stack[k] = d } }
-            state["lastX"]?.let { lastX = BigDecimal(it) }
+            state["lastX"]?.let { lastX = numbers(it).single() }
             state["regs"]?.let { v -> numbers(v).forEachIndexed { k, d -> if (k < REGISTERS) regs[k] = d } }
             state["nj"]?.let { v -> v.split(";").map(String::toInt).forEachIndexed { k, n -> if (k < REGISTERS) nj[k] = n.coerceIn(1, 99) } }
             state["fin"]?.let { v -> numbers(v).forEachIndexed { k, d -> if (k < 5) fin[k] = d } }
@@ -939,7 +939,8 @@ class Calculator {
         }
     }
 
-    private fun numbers(v: String) = v.split(";").map { BigDecimal(it).round(BigMath.MC) }
+    /** Parses saved registers with the same rounding and range check as live results. */
+    private fun numbers(v: String) = v.split(";").map { fit(BigDecimal(it)) }
 
     private sealed interface Prefix {
         data object None : Prefix

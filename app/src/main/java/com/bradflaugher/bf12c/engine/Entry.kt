@@ -20,9 +20,16 @@ internal class Entry {
             if (e.length > 4) e.deleteCharAt(0)
             return
         }
-        if (significantDigits >= BigMath.DIGITS) return
+        // Leading zeros don't count toward precision, but the buffer stays bounded:
+        // past this many characters the value would underflow to zero anyway.
+        if (significantDigits >= BigMath.DIGITS || mantissa.length >= MAX_CHARS) return
         if (mantissa.toString() == "0") mantissa.clear()
         mantissa.append(d)
+    }
+
+    private companion object {
+        /** Enough for 0.000…(99 zeros)… plus all 34 significant digits. */
+        const val MAX_CHARS = BigMath.DIGITS + 101
     }
 
     fun dot() {

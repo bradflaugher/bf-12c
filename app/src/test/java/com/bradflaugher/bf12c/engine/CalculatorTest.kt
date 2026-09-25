@@ -414,6 +414,11 @@ class CalculatorTest {
         assertEquals(before, c.save())
         c.restore(before + mapOf("regs" to "1;;2"))
         assertEquals(before, c.save())
+        // Well-formed but out of range: rejected too, never committed.
+        c.restore(before + mapOf("regs" to "1E+20000"))
+        assertEquals(before, c.save())
+        c.restore(before + mapOf("lastX" to "-1E+10001"))
+        assertEquals(before, c.save())
     }
 
     @Test fun restoreClampsOutOfRangeSettings() {
@@ -443,5 +448,12 @@ class CalculatorTest {
         val ones = "1".repeat(34)
         val c = run(".000000$ones")
         assertEquals(BigDecimal("0.000000$ones"), c.x)
+    }
+
+    @Test(timeout = 2_000) fun leadingZerosAreBounded() {
+        // Endless zeros stop growing the entry; the digit after them is ignored.
+        val c = run("." + "0".repeat(5_000) + "7")
+        assertClose("0", c.x)
+        assertTrue(c.display().main.length < 200)
     }
 }
