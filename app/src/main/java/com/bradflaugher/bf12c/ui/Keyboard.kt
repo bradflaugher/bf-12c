@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -168,10 +167,13 @@ private fun KeyCell(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, mo
 
 @Composable
 private fun Legend(text: String, color: Color, bright: Color, lit: Boolean, dim: Boolean) {
-    BasicText(
+    // Every legend up to five characters gets the same size; only longer ones shrink.
+    FitText(
         text,
-        maxLines = 1,
-        autoSize = TextAutoSize.StepBased(minFontSize = 6.sp, maxFontSize = 11.sp, stepSize = 0.5.sp),
+        maxFontSize = 11.sp,
+        minFontSize = 6.sp,
+        modifier = Modifier.fillMaxSize(),
+        sizing = listOf(text, "00000"),
         style = TextStyle(
             color = when {
                 lit -> bright
@@ -195,6 +197,8 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, mod
         else -> Triple(Palette.keyTop, Palette.keyBottom, Palette.keyLabel)
     }
     val primaryAlpha = if (shift != Shift.NONE && key != Key.F && key != Key.G) 0.4f else 1f
+    // The live prefix key is ringed: pressing it again cancels it.
+    val active = (key == Key.F && shift == Shift.F) || (key == Key.G && shift == Shift.G)
     Box(
         modifier
             .graphicsLayer {
@@ -215,6 +219,7 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, mod
             .clip(shape)
             .background(Brush.verticalGradient(listOf(top, bottom)))
             .border(1.dp, Brush.verticalGradient(listOf(Palette.keyEdge.copy(alpha = 0.9f), Color.Black)), shape)
+            .then(if (active) Modifier.border(2.dp, Color.White.copy(alpha = 0.85f), shape) else Modifier)
             .semantics {
                 role = Role.Button
                 contentDescription = listOfNotNull(key.label, key.f?.let { "f $it" }, key.g?.let { "g $it" }).joinToString(", ")
@@ -236,11 +241,14 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, mod
                 if (tall) {
                     VerticalLabel(key.label, labelColor.copy(alpha = primaryAlpha))
                 } else {
-                    BasicText(
+                    // Sized as if three characters wide, so every key's label matches.
+                    FitText(
                         key.label,
-                        maxLines = 1,
-                        modifier = Modifier.padding(horizontal = 3.dp),
-                        autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 20.sp, stepSize = 1.sp),
+                        maxFontSize = 20.sp,
+                        minFontSize = 8.sp,
+                        step = 1.sp,
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 3.dp),
+                        sizing = listOf(key.label, "000"),
                         style = TextStyle(
                             color = labelColor.copy(alpha = primaryAlpha),
                             fontFamily = Fonts.mono,

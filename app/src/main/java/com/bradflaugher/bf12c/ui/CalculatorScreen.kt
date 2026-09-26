@@ -2,6 +2,7 @@ package com.bradflaugher.bf12c.ui
 
 import android.content.ClipData
 import android.view.HapticFeedbackConstants
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -128,6 +129,8 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
                 }
             }
         }
+        // Back closes the menu instead of leaving the app.
+        BackHandler(enabled = vm.menuOpen) { vm.closeMenu() }
         if (vm.menuOpen) SystemMenu(vm, onCopy = { copy(); vm.closeMenu() }, onPaste = { paste(); vm.closeMenu() })
     }
 }
@@ -251,6 +254,7 @@ private val HELP = listOf(
     "f . ....... SCI notation",
     "f EEX ..... ALL 34 significant digits",
     "g − ....... backspace (or swipe the display left)",
+    "f f / g g . cancel a pressed f or g",
     "Long-press display: copy X.  Double-tap: paste.",
     "TVM: n i PV PMT FV; key a value then the key to store,",
     "     press a key right after another TVM key to solve.",

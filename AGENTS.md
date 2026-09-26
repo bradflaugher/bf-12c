@@ -33,7 +33,8 @@ Like Blauncher, this project supports **only the latest stable everything**:
   runs programs, persists to SharedPreferences.
 - `ui/` — Compose: `Keyboard.kt` (landscape 4×10 and portrait folded
   layouts), `DisplayPanel.kt` (CRT display), `CalculatorScreen.kt`
-  (screen, brand plate, ON-key system menu), `Theme.kt`.
+  (screen, brand plate, ON-key system menu), `FitText.kt` (deterministic
+  one-line text sizing; use it instead of `TextAutoSize`), `Theme.kt`.
 - `app/src/test/` — JVM unit tests. `engine/Keystrokes.kt` is the shared
   keystroke DSL; `HandbookTest` (owner's-handbook examples),
   `CalculatorTest` (keys, rules, regressions), `PropertyTest` (seeded
@@ -47,7 +48,8 @@ Like Blauncher, this project supports **only the latest stable everything**:
 - Match the real HP-12C unless there is a deliberate, documented modern
   extension. Current extensions: 34 digits, `f EEX` = ALL display mode,
   `g −` = backspace (display swipe too; deletes the line in program mode),
-  copy/paste, phosphor themes, 99 program lines, 20 cash flows.
+  copy/paste, phosphor themes, 99 program lines, 20 cash flows, `f f` /
+  `g g` cancels the prefix.
 - Financial keys store when a number was just keyed or computed, and solve
   when pressed right after another financial key — the 12c rule.
 - Keep the engine pure: all Android code lives outside `engine/`.

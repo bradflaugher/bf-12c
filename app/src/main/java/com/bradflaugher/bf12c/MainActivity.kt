@@ -23,6 +23,12 @@ class MainActivity : ComponentActivity() {
         applySystemBars(newConfig)
     }
 
+    // Coming back from another app can bring the bars back; hide them again.
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applySystemBars(resources.configuration)
+    }
+
     /** Landscape is the full 12c keyboard: give it the whole screen. */
     private fun applySystemBars(config: Configuration) {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
