@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -35,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -193,76 +196,181 @@ private fun Logo() {
 @Composable
 private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Unit) {
     val p = vm.phosphor
-    val glow = if (p.glow) Shadow(p.ink.copy(alpha = 0.8f), blurRadius = 14f) else null
     val ink = if (p.glow) p.ink else Color(0xFFB9C4A3)
-    val text = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 24.sp, shadow = glow)
-    val dim = text.copy(color = ink.copy(alpha = 0.55f), fontSize = 19.sp)
+    val glow = if (p.glow) Shadow(p.ink.copy(alpha = 0.8f), blurRadius = 14f) else null
+    val style = MenuStyle(
+        ink = ink,
+        title = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 28.sp, shadow = glow),
+        item = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 23.sp, shadow = glow),
+        section = TextStyle(color = ink.copy(alpha = 0.6f), fontFamily = Fonts.crt, fontSize = 17.sp, letterSpacing = 2.sp),
+        key = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 19.sp, shadow = glow?.copy(blurRadius = 8f)),
+        body = TextStyle(color = ink.copy(alpha = 0.82f), fontFamily = Fonts.crt, fontSize = 19.sp, lineHeight = 21.sp),
+    )
     var help by remember { mutableStateOf(false) }
+    // Back steps out of the manual before it closes the menu.
+    BackHandler(enabled = help) { help = false }
     Box(
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.82f))
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { vm.closeMenu() },
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { vm.closeMenu() }
+            .safeDrawingPadding(),
         contentAlignment = Alignment.Center,
     ) {
+        // Header and footer stay put; only the body scrolls.
         Column(
             Modifier
-                .padding(20.dp)
+                .padding(16.dp)
                 .widthIn(max = 560.dp)
                 .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFF030704))
                 .border(1.dp, ink.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
-                .padding(18.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
         ) {
-            BasicText("BF-12C SYSTEM MENU", style = text.copy(fontSize = 28.sp))
-            BasicText("────────────────────────────", style = dim)
-            if (help) {
-                for (line in HELP) BasicText(line, style = dim.copy(color = ink.copy(alpha = 0.85f)))
-                MenuItem("< BACK", text) { help = false }
-                return@Column
-            }
-            BasicText("PHOSPHOR", style = dim)
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                for (option in Phosphor.entries) {
-                    val selected = option == p
-                    MenuItem(if (selected) "[${option.title}]" else " ${option.title} ", text.copy(fontSize = 20.sp, color = if (selected) ink else ink.copy(alpha = 0.5f))) {
-                        vm.selectPhosphor(option)
+            BasicText(if (help) "BF-12C MANUAL" else "BF-12C SYSTEM", style = style.title, maxLines = 1, softWrap = false)
+            Rule(ink, Modifier.padding(top = 8.dp, bottom = 4.dp))
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                if (help) {
+                    for ((title, rows) in MANUAL) {
+                        Section(title, style)
+                        for ((key, text) in rows) ManualRow(key, text, style)
                     }
+                } else {
+                    Section("PHOSPHOR", style)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        for (option in Phosphor.entries) {
+                            val selected = option == p
+                            BasicText(
+                                if (selected) "[${option.title}]" else " ${option.title} ",
+                                style = style.item.copy(fontSize = 20.sp, color = if (selected) ink else ink.copy(alpha = 0.5f)),
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.clickable { vm.selectPhosphor(option) }.padding(vertical = 6.dp),
+                            )
+                        }
+                    }
+                    Section("SETTINGS", style)
+                    MenuItem("HAPTICS", if (vm.haptics) "ON" else "OFF", style) { vm.toggleHaptics() }
+                    Section("CLIPBOARD", style)
+                    MenuItem("COPY X", null, style, onClick = onCopy)
+                    MenuItem("PASTE X", null, style, onClick = onPaste)
+                    Section("HELP", style)
+                    MenuItem("MANUAL", null, style) { help = true }
                 }
             }
-            MenuItem("> HAPTICS ........ ${if (vm.haptics) "ON" else "OFF"}", text) { vm.toggleHaptics() }
-            MenuItem("> COPY X ......... CLIPBOARD", text, onCopy)
-            MenuItem("> PASTE X ........ FROM CLIPBOARD", text, onPaste)
-            MenuItem("> MANUAL", text) { help = true }
-            MenuItem("> EXIT", text) { vm.closeMenu() }
+            Rule(ink, Modifier.padding(top = 6.dp, bottom = 2.dp))
+            if (help) {
+                MenuItem("BACK", null, style, prefix = "<") { help = false }
+            } else {
+                MenuItem("EXIT", null, style) { vm.closeMenu() }
+            }
         }
     }
 }
 
+private class MenuStyle(
+    val ink: Color,
+    val title: TextStyle,
+    val item: TextStyle,
+    val section: TextStyle,
+    val key: TextStyle,
+    val body: TextStyle,
+)
+
+/** A drawn divider: a text rule of box characters wraps on narrow screens. */
 @Composable
-private fun MenuItem(label: String, style: TextStyle, onClick: () -> Unit) {
-    BasicText(label, style = style, modifier = Modifier.clickable(onClick = onClick).padding(vertical = 2.dp))
+private fun Rule(ink: Color, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().height(1.dp).background(ink.copy(alpha = 0.45f)))
 }
 
-private val HELP = listOf(
-    "RPN: key a number, ENTER, key another, then the operation.",
-    "Stack: X Y Z T. LSTx recalls the last X (g ENTER).",
-    "f 0-9 ..... FIX n decimals",
-    "f . ....... SCI notation",
-    "f EEX ..... ALL 34 significant digits",
-    "g − ....... backspace (or swipe the display left)",
-    "f f / g g . cancel a pressed f or g",
-    "Long-press display: copy X.  Double-tap: paste.",
-    "TVM: n i PV PMT FV; key a value then the key to store,",
-    "     press a key right after another TVM key to solve.",
-    "g 7 / g 8 . BEGIN / END.   g 4 / g 5 . D.MY / M.DY",
-    "Cash flows: g CF0, g CFj, g Nj, then f NPV or f IRR.",
-    "Stats: y ENTER x Σ+, then g 0 (x̄), g . (s), g 1 / g 2.",
-    "Program: f R/S toggles PRGM. g R↓ nn is GTO nn,",
-    "     g R↓ . nn jumps while editing, g − deletes a line.",
-    "Errors: 0 math 2 stats 3/7 IRR 4 memory 5 fin 6 reg 8 date.",
-    "Memory is continuous: everything survives restarts.",
+@Composable
+private fun Section(title: String, style: MenuStyle) {
+    BasicText(title, style = style.section, maxLines = 1, modifier = Modifier.padding(top = 12.dp, bottom = 2.dp))
+}
+
+/** "> LABEL ........ VALUE" with a drawn dot leader that stretches to fit, never wraps. */
+@Composable
+private fun MenuItem(label: String, value: String?, style: MenuStyle, prefix: String = ">", onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BasicText("$prefix $label", style = style.item, maxLines = 1, softWrap = false)
+        if (value != null) {
+            val dot = style.ink.copy(alpha = 0.4f)
+            Spacer(
+                Modifier
+                    .weight(1f)
+                    .height(style.item.fontSize.value.dp)
+                    .padding(horizontal = 8.dp)
+                    .drawBehind {
+                        val step = 7.dp.toPx()
+                        val r = 1.2.dp.toPx()
+                        val y = size.height * 0.62f
+                        var x = r
+                        while (x < size.width - r) {
+                            drawCircle(dot, r, Offset(x, y))
+                            x += step
+                        }
+                    },
+            )
+            BasicText(value, style = style.item, maxLines = 1, softWrap = false)
+        }
+    }
+}
+
+/** One manual entry: keys in a fixed column, the description wrapping beside it. */
+@Composable
+private fun ManualRow(key: String, text: String, style: MenuStyle) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        BasicText(key, style = style.key, modifier = Modifier.weight(0.36f).padding(end = 10.dp))
+        BasicText(text, style = style.body, modifier = Modifier.weight(0.64f))
+    }
+}
+
+private val MANUAL: List<Pair<String, List<Pair<String, String>>>> = listOf(
+    "BASICS" to listOf(
+        "RPN" to "Key a number, ENTER, key the next, then the operation.",
+        "Stack" to "X Y Z T. g ENTER recalls LSTx, the last X.",
+        "Memory" to "Continuous: everything survives restarts.",
+    ),
+    "DISPLAY" to listOf(
+        "f 0–9" to "FIX: show n decimals.",
+        "f ." to "SCI notation.",
+        "f EEX" to "ALL 34 significant digits.",
+    ),
+    "EDITING" to listOf(
+        "g −" to "Backspace, or swipe the display left.",
+        "f f · g g" to "Cancel a pressed f or g.",
+        "Long-press" to "Copy X from the display.",
+        "Double-tap" to "Paste a number into X.",
+    ),
+    "FINANCE" to listOf(
+        "TVM" to "n i PV PMT FV. Key a value, then the key to store it. Press a key right after another TVM key to solve for it.",
+        "g 7 · g 8" to "BEGIN / END payments.",
+        "g 4 · g 5" to "D.MY / M.DY dates.",
+        "Cash flows" to "g CF₀, g CFⱼ, g Nⱼ, then f NPV or f IRR.",
+    ),
+    "STATISTICS" to listOf(
+        "Σ+" to "y ENTER x Σ+ adds a data point.",
+        "g 0 · g ." to "Mean x̄ and standard deviation s.",
+        "g 1 · g 2" to "Linear estimates x̂,r and ŷ,r.",
+    ),
+    "PROGRAMS" to listOf(
+        "f R/S" to "Enter or leave PRGM mode.",
+        "g R↓ nn" to "GTO line nn.",
+        "g R↓ . nn" to "Jump to line nn while editing.",
+        "g −" to "Delete the current line.",
+    ),
+    "ERRORS" to listOf(
+        "0" to "Math",
+        "1" to "Overflow",
+        "2" to "Statistics",
+        "3 · 7" to "IRR",
+        "4" to "Memory",
+        "5" to "Financial",
+        "6" to "Register",
+        "8" to "Calendar",
+    ),
 )
