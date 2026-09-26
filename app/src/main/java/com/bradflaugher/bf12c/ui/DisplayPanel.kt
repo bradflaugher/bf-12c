@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,8 +38,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bradflaugher.bf12c.engine.Display
@@ -52,6 +54,16 @@ private val ERROR_NAMES = mapOf(
 )
 
 private const val BOOT = "BF-12C READY"
+
+/** When this process started the boot banner (System.nanoTime), 0 before; see [DisplayPanel]. */
+private var bootStart = 0L
+
+/** Characters of the banner typed so far, and whether it has finished. */
+private fun bootProgress(): Pair<Int, Boolean> {
+    if (bootStart == 0L) return 0 to false
+    val ms = (System.nanoTime() - bootStart) / 1_000_000
+    return (ms / 35).toInt().coerceAtMost(BOOT.length) to (ms >= BOOT.length * 35 + 500)
+}
 
 @Composable
 fun DisplayPanel(
@@ -70,22 +82,26 @@ fun DisplayPanel(
         animationSpec = infiniteRepeatable(tween(2300, easing = LinearEasing), RepeatMode.Reverse),
         label = "flicker",
     )
-    val cursorOn by rememberInfiniteTransition(label = "cursor").animateFloat(
+    // Read only while drawing, so the blink redraws the cursor without recomposing.
+    val cursorPhase = rememberInfiniteTransition(label = "cursor").animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(tween(1060, easing = LinearEasing), RepeatMode.Restart),
         label = "cursor",
     )
-    // Boot banner types itself out once per launch.
-    var bootChars by remember { mutableIntStateOf(0) }
-    var booted by remember { mutableStateOf(false) }
+    // Boot banner types itself out once per process. Its clock lives outside
+    // composition: rotating swaps the whole layout, and the new panel must pick
+    // the banner up where it was (or skip it), never replay it.
+    var bootChars by remember { mutableIntStateOf(bootProgress().first) }
+    var booted by remember { mutableStateOf(bootProgress().second) }
     LaunchedEffect(Unit) {
-        while (bootChars < BOOT.length) {
-            bootChars++
-            delay(35)
+        if (bootStart == 0L) bootStart = System.nanoTime()
+        while (!booted) {
+            val (chars, done) = bootProgress()
+            bootChars = chars
+            booted = done
+            if (!done) delay(16)
         }
-        delay(500)
-        booted = true
     }
 
     val ink = phosphor.ink
@@ -135,16 +151,20 @@ fun DisplayPanel(
                 expanded -> listOf("T" to display.stack[3], "Z" to display.stack[2], "Y" to display.stack[1])
                 else -> listOf("Y" to display.stack[1])
             }
+            // One size for every register row, so T, Z and Y line up digit for digit.
+            val upperSizing = upper.map { it.second }
             for ((name, value) in upper) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     if (name.isNotEmpty()) BasicText(name, style = small.copy(fontSize = 16.sp))
                     Spacer(Modifier.width(10.dp))
-                    BasicText(
+                    FitText(
                         value,
+                        style = small,
+                        maxFontSize = 20.sp,
+                        minFontSize = 10.sp,
                         modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                        autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 20.sp),
-                        style = small.copy(textAlign = if (programMode) TextAlign.Start else TextAlign.End),
+                        sizing = upperSizing,
+                        contentAlignment = if (programMode) Alignment.CenterStart else Alignment.CenterEnd,
                     )
                 }
             }
@@ -154,29 +174,45 @@ fun DisplayPanel(
                 programMode -> listing.firstOrNull { it.startsWith(display.main.take(4)) } ?: display.main
                 else -> display.main
             }
-            val cursor = if ((display.entering || !booted) && cursorOn < 0.5f) "█" else if (display.entering || !booted) " " else ""
-            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = if (programMode) Alignment.CenterStart else Alignment.CenterEnd) {
-                BasicText(
-                    mainText + cursor,
-                    maxLines = 1,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = 140.sp, stepSize = 2.sp),
-                    style = TextStyle(
-                        color = ink,
-                        fontFamily = Fonts.crt,
-                        textAlign = if (programMode || !booted) TextAlign.Start else TextAlign.End,
-                        shadow = glow,
-                    ),
-                )
+            // The cursor is a drawn block over an invisible trailing digit, not a glyph:
+            // the font has no █, and a fallback glyph changed the width every blink.
+            // The number is always sized as if the cursor were there, so finishing an
+            // entry never makes it jump either.
+            val showCursor = display.entering || !booted
+            val mainLine = buildAnnotatedString {
+                append(mainText)
+                if (showCursor) withStyle(SpanStyle(color = Color.Transparent, shadow = Shadow.None)) { append(CURSOR_SLOT) }
             }
+            var mainLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+            FitText(
+                mainLine,
+                style = TextStyle(color = ink, fontFamily = Fonts.crt, shadow = glow),
+                maxFontSize = 140.sp,
+                minFontSize = 14.sp,
+                step = 2.sp,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                sizing = listOf(mainText + CURSOR_SLOT),
+                contentAlignment = if (programMode || !booted) Alignment.CenterStart else Alignment.CenterEnd,
+                textModifier = Modifier.drawWithContent {
+                    drawContent()
+                    val layout = mainLayout ?: return@drawWithContent
+                    if (!showCursor || cursorPhase.value >= 0.5f || layout.layoutInput.text.isEmpty()) return@drawWithContent
+                    val box = layout.getBoundingBox(layout.layoutInput.text.length - 1)
+                    val inset = box.width * 0.06f
+                    drawRect(ink, Offset(box.left + inset, box.top), Size(box.width - 2 * inset, box.height))
+                },
+                onTextLayout = { mainLayout = it },
+            )
 
             // Full precision readout whenever the main line is rounded.
             if (booted && display.rounded && expanded) {
-                BasicText(
+                FitText(
                     "≡ " + display.full,
-                    maxLines = 1,
+                    style = small,
+                    maxFontSize = 18.sp,
+                    minFontSize = 9.sp,
                     modifier = Modifier.fillMaxWidth(),
-                    autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 18.sp),
-                    style = small.copy(textAlign = TextAlign.End),
+                    contentAlignment = Alignment.CenterEnd,
                 )
             }
 
@@ -208,6 +244,9 @@ private fun Annunciators(display: Display, phosphor: Phosphor, toast: String?, e
         }
     }
 }
+
+/** Invisible stand-in the cursor block is drawn over; any digit, the font is monospaced. */
+private const val CURSOR_SLOT = "0"
 
 private val WEEKDAYS = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 

@@ -476,4 +476,39 @@ class CalculatorTest {
         assertTrue(c.x < BigDecimal("1E+10000"))
         assertTrue(c.x > BigDecimal("9.9E+9999"))
     }
+
+    @Test fun pressingAPrefixAgainCancelsIt() {
+        val f = run("f")
+        assertEquals(true, f.display().annunciators.f)
+        f.keys("f")
+        assertEquals(false, f.display().annunciators.f)
+        // With f cancelled, 2 is a digit rather than FIX 2.
+        f.keys("2 ENTER")
+        assertClose("2", f.x)
+        assertEquals(false, run("g g").display().annunciators.g)
+        // f then g still switches to g.
+        val fg = run("f g")
+        assertEquals(false, fg.display().annunciators.f)
+        assertEquals(true, fg.display().annunciators.g)
+        // g g in between leaves the stack alone: 3 ENTER 4 g g + = 7.
+        assertClose("7", run("3 ENTER 4 g g +").x)
+    }
+
+    @Test fun prefixCancelKeepsSolveOnNextFinancialKey() {
+        // n i PV PMT stored; FV then f f then PMT still solves PMT.
+        val c = run("10 n 1 i 100 PV 0 FV f f PMT")
+        assertEquals(null, c.error)
+        assertTrue(c.x.signum() != 0)
+    }
+
+    @Test fun prefixCancelInProgramMode() {
+        val c = run("f RS g")
+        assertEquals(true, c.display().annunciators.g)
+        c.keys("g")
+        assertEquals(false, c.display().annunciators.g)
+        assertEquals(null, c.display().annunciators.pending)
+        // The next key records on its own, not as a g function: 3 is line 001.
+        c.keys("3")
+        assertEquals(listOf(listOf(Key.D3)), c.program)
+    }
 }

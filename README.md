@@ -46,7 +46,8 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   way people copy them: `1,234.50`, `$1,000`, `(250.00)` (negative), `−3.5`,
   `12%`, `6.02e23`. A pasted value behaves like a recall, so `PV` after a
   paste stores it. The `ON` key opens a system menu with four phosphors:
-  P1 green, P3 amber, ice, and a classic 12c LCD.
+  P1 green, P3 amber, ice, and a classic 12c LCD; back closes it.
+  Pressing a lit `f` or `g` again cancels it (the lit key is ringed).
 - **No permissions at all.** No network, no backups, no analytics.
 
 ## Install

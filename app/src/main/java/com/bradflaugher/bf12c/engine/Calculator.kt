@@ -124,8 +124,8 @@ class Calculator {
 
     fun display(): Display {
         val annunciators = Annunciators(
-            f = prefix == Prefix.F,
-            g = prefix == Prefix.G,
+            f = prefix == Prefix.F || (programMode && stepBuffer.lastOrNull() == Key.F),
+            g = prefix == Prefix.G || (programMode && stepBuffer.lastOrNull() == Key.G),
             begin = begin,
             dmy = dmy,
             compound = compoundOdd,
@@ -227,8 +227,9 @@ class Calculator {
     private fun execute(key: Key) {
         when (val p = prefix) {
             Prefix.None -> primary(key)
-            Prefix.F -> { prefix = Prefix.None; gold(key) }
-            Prefix.G -> { prefix = Prefix.None; blue(key) }
+            // Pressing a live f or g again cancels it (a modern extension).
+            Prefix.F -> { prefix = Prefix.None; if (key != Key.F) gold(key) }
+            Prefix.G -> { prefix = Prefix.None; if (key != Key.G) blue(key) }
             is Prefix.Sto -> storage(key, p)
             is Prefix.Rcl -> recall(key, p)
             is Prefix.Gto -> gotoLine(key, p)
@@ -829,6 +830,10 @@ class Calculator {
     // --- Program mode ----------------------------------------------------------------
 
     private fun programKey(key: Key) {
+        if ((key == Key.F || key == Key.G) && stepBuffer.lastOrNull() == key && stepBuffer.all { it == Key.F || it == Key.G }) {
+            stepBuffer.clear() // f f / g g cancels, as outside program mode
+            return
+        }
         stepBuffer += key
         val buf = stepBuffer.toList()
         when (val outcome = ProgramParser.parse(buf)) {
