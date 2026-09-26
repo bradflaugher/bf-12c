@@ -364,8 +364,7 @@ private val MANUAL: List<Pair<String, List<Pair<String, String>>>> = listOf(
         "g −" to "Delete the current line.",
     ),
     "ERRORS" to listOf(
-        "0" to "Math",
-        "1" to "Overflow",
+        "0" to "Math, or a result out of range",
         "2" to "Statistics",
         "3 · 7" to "IRR",
         "4" to "Memory",
