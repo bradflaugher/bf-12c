@@ -55,8 +55,15 @@ private val ERROR_NAMES = mapOf(
 
 private const val BOOT = "BF-12C READY"
 
-/** Set once the boot banner has played; see [DisplayPanel]. */
-private var bootShown = false
+/** When this process started the boot banner (System.nanoTime), 0 before; see [DisplayPanel]. */
+private var bootStart = 0L
+
+/** Characters of the banner typed so far, and whether it has finished. */
+private fun bootProgress(): Pair<Int, Boolean> {
+    if (bootStart == 0L) return 0 to false
+    val ms = (System.nanoTime() - bootStart) / 1_000_000
+    return (ms / 35).toInt().coerceAtMost(BOOT.length) to (ms >= BOOT.length * 35 + 500)
+}
 
 @Composable
 fun DisplayPanel(
@@ -82,19 +89,19 @@ fun DisplayPanel(
         animationSpec = infiniteRepeatable(tween(1060, easing = LinearEasing), RepeatMode.Restart),
         label = "cursor",
     )
-    // Boot banner types itself out once per process. The flag lives outside
-    // composition: rotating swaps the whole layout, and that must not replay it.
-    var bootChars by remember { mutableIntStateOf(if (bootShown) BOOT.length else 0) }
-    var booted by remember { mutableStateOf(bootShown) }
+    // Boot banner types itself out once per process. Its clock lives outside
+    // composition: rotating swaps the whole layout, and the new panel must pick
+    // the banner up where it was (or skip it), never replay it.
+    var bootChars by remember { mutableIntStateOf(bootProgress().first) }
+    var booted by remember { mutableStateOf(bootProgress().second) }
     LaunchedEffect(Unit) {
-        if (booted) return@LaunchedEffect
-        while (bootChars < BOOT.length) {
-            bootChars++
-            delay(35)
+        if (bootStart == 0L) bootStart = System.nanoTime()
+        while (!booted) {
+            val (chars, done) = bootProgress()
+            bootChars = chars
+            booted = done
+            if (!done) delay(16)
         }
-        delay(500)
-        booted = true
-        bootShown = true
     }
 
     val ink = phosphor.ink
