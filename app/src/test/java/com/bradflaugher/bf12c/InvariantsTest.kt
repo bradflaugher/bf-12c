@@ -3,6 +3,7 @@ package com.bradflaugher.bf12c
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+
 import org.junit.Test
 import java.io.File
 
@@ -56,11 +57,15 @@ class InvariantsTest {
         }
     }
 
-    @Test fun sdkLevelsMoveTogether() {
+    @Test fun sdkPolicy() {
         val gradle = File(app, "build.gradle.kts").readText()
-        val levels = listOf("compileSdk", "minSdk", "targetSdk").map { name ->
-            Regex("""$name\s*=\s*(\d+)""").find(gradle)?.groupValues?.get(1) ?: error("$name not found")
-        }
-        assertEquals("compileSdk, minSdk and targetSdk must be equal", 1, levels.toSet().size)
+        fun level(name: String) = Regex("""$name\s*=\s*(\d+)""").find(gradle)?.groupValues?.get(1)?.toInt()
+            ?: error("$name not found")
+        assertEquals("compileSdk and targetSdk move together", level("compileSdk"), level("targetSdk"))
+        assertTrue("minSdk cannot be above targetSdk", level("minSdk") <= level("targetSdk"))
+
+        val checks = File(app, "src/main").walk().filter { it.extension == "kt" }
+            .filter { it.readText().contains("SDK_INT") }.map { it.name }.toList()
+        assertTrue("no Build.VERSION.SDK_INT checks: $checks", checks.isEmpty())
     }
 }

@@ -1,19 +1,35 @@
 # Agent and contributor instructions
 
-bf-12c is a personal HP-12C-inspired RPN calculator for Android, sideloaded
-only. Read `README.md` for the feature overview and keep it in sync with any
-behavior you change.
+bf-12c is a personal HP-12C-inspired RPN calculator for Android. Read
+`README.md` for the feature overview and keep it in sync with any behavior
+you change.
 
 ## Latest-only platform policy
 
-Like Blauncher, this project supports **only the latest stable everything**:
+This project builds with **only the latest public stable version of
+everything** and never carries code just for older devices:
 
-- `minSdk`, `targetSdk` and `compileSdk` are the latest stable API level, all
-  equal (`app/build.gradle.kts`). Bump all three together.
-- No `Build.VERSION.SDK_INT` checks, no compat shims for older devices.
-- AGP, Kotlin, Compose BOM and libraries (`gradle/libs.versions.toml`) and
-  Gradle (`gradle/wrapper/gradle-wrapper.properties`, checksum-pinned) track
-  the latest stable releases. Dependabot keeps them current.
+- `targetSdk` and `compileSdk` are always the **latest public stable Android
+  API level** (`app/build.gradle.kts`). When a new stable Android version
+  ships, bump them together.
+- `minSdk` is the newest API the code actually uses (today Android 13,
+  API 33, for `BigDecimal.sqrt`), so older phones that happen to support
+  everything come free. If a feature needs a newer API, raise `minSdk` to
+  it rather than add a check.
+- No backwards-compatibility code: no `Build.VERSION.SDK_INT` checks, no
+  compat shims kept solely for older devices, no legacy code paths.
+  Delete such code on sight instead of extending it. Lint's `NewApi` error
+  keeps the code honest about `minSdk`.
+- The toolchain tracks the latest stable releases too: Android Gradle Plugin,
+  Kotlin, the Compose BOM and libraries in `gradle/libs.versions.toml`, and
+  Gradle in `gradle/wrapper/gradle-wrapper.properties` (keep the distribution
+  checksum-pinned). Dependabot keeps these current. Do not hold versions
+  back for compatibility reasons.
+- If a change only works by targeting an older API level or downgrading a
+  dependency, that change is wrong for this project.
+
+Do not copy version numbers into docs. Pins live in Gradle and are updated
+by Dependabot.
 
 ## Layout
 
@@ -75,9 +91,10 @@ Like Blauncher, this project supports **only the latest stable everything**:
 `.github/workflows/ci.yml` runs the unit tests and lint as
 separate checks on every pull request and push to `main`.
 
-Every push to `main` builds a signed APK and publishes it as the single
-date-labeled GitHub release `vYYYY.MM.DD.<run>`, deleting all older
-releases. Pull requests build unsigned and publish nothing. Keep `main` green.
+Every push to `main` builds a signed APK and Play bundle and publishes them
+as the single date-labeled GitHub release `vYYYY.MM.DD.<run>`, deleting all
+older releases. Pull requests build unsigned and publish nothing. Keep
+`main` green.
 
 ## Visual checks
 

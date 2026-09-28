@@ -28,7 +28,8 @@ android {
 
     defaultConfig {
         applicationId = "com.bradflaugher.bf12c"
-        minSdk = 37
+        // The newest API the code uses; see AGENTS.md.
+        minSdk = 33
         targetSdk = 37
         versionCode = versionCodeFromEnvironment.toInt()
         versionName = System.getenv("BF12C_VERSION_NAME") ?: "dev"
