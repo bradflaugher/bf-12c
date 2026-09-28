@@ -65,6 +65,9 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Full-precision X after every keystroke queued so far has been applied. */
+    suspend fun copyX(): String = withContext(engine) { calc.display().full }
+
     enum class PasteResult { PASTED, HALTED, REJECTED, NOT_A_NUMBER }
 
     /** Pastes [text] into X, reporting what actually happened for the UI to confirm. */

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,12 +32,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +56,13 @@ enum class Shift { NONE, F, G }
 
 private val LABEL_STRIP = 15.dp
 private val BRACKET_STRIP = 9.dp
+
+/**
+ * How much bigger than a phone's the keyboard's printing is: 1 on phones,
+ * up to 2 on tablets and unfolded foldables, so legends don't sit tiny in
+ * big keys. Set by the screen from the window size.
+ */
+val LocalKeyScale = compositionLocalOf { 1f }
 
 /** The full 12c keyboard: 4 rows of 10, ENTER spanning the last two rows. */
 @Composable
@@ -119,7 +132,8 @@ private data class Bracket(val label: String, val start: Int, val span: Int)
 /** The gold brackets printed across groups of f legends: BOND, DEPRECIATION, CLEAR. */
 @Composable
 private fun Brackets(totalCols: Int, vararg brackets: Bracket) {
-    Row(Modifier.fillMaxWidth().height(BRACKET_STRIP)) {
+    // Printing on the faceplate, not controls: TalkBack skips it.
+    Row(Modifier.fillMaxWidth().height(BRACKET_STRIP * LocalKeyScale.current).clearAndSetSemantics {}) {
         var col = 0
         for (b in brackets) {
             if (b.start > col) Spacer(Modifier.weight((b.start - col).toFloat()))
@@ -133,7 +147,7 @@ private fun Brackets(totalCols: Int, vararg brackets: Bracket) {
 @Composable
 private fun BracketLine(label: String, modifier: Modifier) {
     val measurer = rememberTextMeasurer()
-    val style = TextStyle(color = Palette.gold, fontSize = 8.sp, fontFamily = Fonts.mono, letterSpacing = 1.sp)
+    val style = TextStyle(color = Palette.gold, fontSize = 8.sp * LocalKeyScale.current, fontFamily = Fonts.mono, letterSpacing = 1.sp)
     Box(
         modifier
             .fillMaxHeight()
@@ -155,13 +169,49 @@ private fun BracketLine(label: String, modifier: Modifier) {
     }
 }
 
+/**
+ * One key with its gold legend above. The whole cell, legend strip included,
+ * takes the touch, so the target is as big as the key looks.
+ */
 @Composable
 private fun KeyCell(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, modifier: Modifier, tall: Boolean = false) {
-    Column(modifier.padding(horizontal = 3.dp, vertical = 1.5.dp)) {
-        Box(Modifier.fillMaxWidth().height(LABEL_STRIP), contentAlignment = Alignment.Center) {
+    var pressed by remember { mutableStateOf(false) }
+    val scale = LocalKeyScale.current
+    // The live prefix key is ringed: pressing it again cancels it.
+    val active = (key == Key.F && shift == Shift.F) || (key == Key.G && shift == Shift.G)
+    // TalkBack reads the legend that a press would run, in words, not glyphs.
+    val spoken = when {
+        shift == Shift.F && key.spokenF != null -> "f ${key.spokenF}"
+        shift == Shift.G && key.spokenG != null -> "g ${key.spokenG}"
+        else -> listOfNotNull(key.spoken, key.spokenF?.let { "f $it" }, key.spokenG?.let { "g $it" }).joinToString(", ")
+    }
+    Column(
+        modifier
+            .clearAndSetSemantics {
+                role = Role.Button
+                contentDescription = spoken
+                if (active) stateDescription = "active"
+                onClick { onKey(key); true }
+            }
+            .pointerHoverIcon(PointerIcon.Hand)
+            .pointerInput(key) {
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    // A right or middle click is not a key press.
+                    if (down.type == PointerType.Mouse && !currentEvent.buttons.isPrimaryPressed) return@awaitEachGesture
+                    pressed = true
+                    onKey(key)
+                    waitForUpOrCancellation()
+                    pressed = false
+                }
+            }
+            // Inside the touch area, so the gap between keys isn't dead.
+            .padding(horizontal = 3.dp, vertical = 1.5.dp),
+    ) {
+        Box(Modifier.fillMaxWidth().height(LABEL_STRIP * scale), contentAlignment = Alignment.Center) {
             key.f?.let { Legend(it, Palette.gold, Palette.goldBright, lit = shift == Shift.F, dim = shift == Shift.G) }
         }
-        KeyCap(key, shift, ink, onKey, Modifier.weight(1f).fillMaxWidth(), tall)
+        KeyCap(key, shift, ink, pressed, active, Modifier.weight(1f).fillMaxWidth(), tall)
     }
 }
 
@@ -170,7 +220,7 @@ private fun Legend(text: String, color: Color, bright: Color, lit: Boolean, dim:
     // Every legend up to five characters gets the same size; only longer ones shrink.
     FitText(
         text,
-        maxFontSize = 11.sp,
+        maxFontSize = 11.sp * LocalKeyScale.current,
         minFontSize = 6.sp,
         modifier = Modifier.fillMaxSize(),
         sizing = listOf(text, "00000"),
@@ -188,8 +238,7 @@ private fun Legend(text: String, color: Color, bright: Color, lit: Boolean, dim:
 }
 
 @Composable
-private fun KeyCap(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, modifier: Modifier, tall: Boolean) {
-    var pressed by remember { mutableStateOf(false) }
+private fun KeyCap(key: Key, shift: Shift, ink: Color, pressed: Boolean, active: Boolean, modifier: Modifier, tall: Boolean) {
     val shape = RoundedCornerShape(6.dp)
     val (top, bottom, labelColor) = when (key) {
         Key.F -> Triple(Palette.goldBright, Palette.gold, Color(0xFF1A1206))
@@ -197,8 +246,6 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, mod
         else -> Triple(Palette.keyTop, Palette.keyBottom, Palette.keyLabel)
     }
     val primaryAlpha = if (shift != Shift.NONE && key != Key.F && key != Key.G) 0.4f else 1f
-    // The live prefix key is ringed: pressing it again cancels it.
-    val active = (key == Key.F && shift == Shift.F) || (key == Key.G && shift == Shift.G)
     Box(
         modifier
             .graphicsLayer {
@@ -219,21 +266,7 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, mod
             .clip(shape)
             .background(Brush.verticalGradient(listOf(top, bottom)))
             .border(1.dp, Brush.verticalGradient(listOf(Palette.keyEdge.copy(alpha = 0.9f), Color.Black)), shape)
-            .then(if (active) Modifier.border(2.dp, Color.White.copy(alpha = 0.85f), shape) else Modifier)
-            .semantics {
-                role = Role.Button
-                contentDescription = listOfNotNull(key.label, key.f?.let { "f $it" }, key.g?.let { "g $it" }).joinToString(", ")
-                onClick { onKey(key); true }
-            }
-            .pointerInput(key) {
-                awaitEachGesture {
-                    awaitFirstDown()
-                    pressed = true
-                    onKey(key)
-                    waitForUpOrCancellation()
-                    pressed = false
-                }
-            },
+            .then(if (active) Modifier.border(2.dp, Color.White.copy(alpha = 0.85f), shape) else Modifier),
     ) {
         Column(Modifier.fillMaxSize()) {
             // Upper sloped face: the primary legend.
@@ -244,7 +277,7 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, onKey: (Key) -> Unit, mod
                     // Sized as if three characters wide, so every key's label matches.
                     FitText(
                         key.label,
-                        maxFontSize = 20.sp,
+                        maxFontSize = 20.sp * LocalKeyScale.current,
                         minFontSize = 8.sp,
                         step = 1.sp,
                         modifier = Modifier.fillMaxSize().padding(horizontal = 3.dp),
@@ -278,7 +311,7 @@ private fun VerticalLabel(text: String, color: Color) {
         for (c in text) {
             BasicText(
                 c.toString(),
-                style = TextStyle(color = color, fontFamily = Fonts.mono, fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                style = TextStyle(color = color, fontFamily = Fonts.mono, fontWeight = FontWeight.Bold, fontSize = 15.sp * LocalKeyScale.current),
             )
         }
     }

@@ -1,0 +1,1 @@
+Hardware keyboard input, TalkBack support for every key and the display, bigger legends on tablets and foldables, and better behavior in split screen and desktop windows.

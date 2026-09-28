@@ -3,19 +3,28 @@
 
     <!-- No permissions at all: no network, no storage, nothing leaves the device. -->
 
+    <!-- hasFragileUserData: uninstalling offers to keep the stack, registers and program on the device. -->
     <application
         android:allowBackup="false"
+        android:appCategory="productivity"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
+        android:hasFragileUserData="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Bf12c">
 
+        <!-- Compose handles every configuration change in place: rotating, folding,
+             resizing a desktop window, moving it to another display or plugging in a
+             keyboard never restarts the activity. -->
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|keyboard|keyboardHidden|navigation|fontScale|fontWeightAdjustment|layoutDirection|locale|colorMode|touchscreen"
             android:exported="true">
+            <!-- Below this, a freeform or split-screen window can't fit a usable keyboard. -->
+            <layout
+                android:minWidth="320dp"
+                android:minHeight="320dp" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

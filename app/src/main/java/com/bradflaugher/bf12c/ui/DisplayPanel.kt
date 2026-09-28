@@ -38,6 +38,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -108,9 +114,34 @@ fun DisplayPanel(
     val glow = if (phosphor.glow) Shadow(ink.copy(alpha = 0.85f), Offset.Zero, blurRadius = 22f) else null
     val small = TextStyle(color = phosphor.dim, fontFamily = Fonts.crt, fontSize = 20.sp, shadow = glow?.copy(color = phosphor.dim, blurRadius = 8f))
 
+    // TalkBack hears one node: what X shows and which annunciators are lit,
+    // announced as it changes. The gestures are offered as actions.
+    val a = display.annunciators
+    val spoken = listOfNotNull(
+        toast,
+        if (booted) display.main else BOOT,
+        ERROR_NAMES[display.main.removePrefix("Error ").toIntOrNull()]?.lowercase()?.takeIf { display.isError },
+        display.weekday?.let { "day of week $it, ${WEEKDAY_NAMES[it - 1]}" },
+        "f".takeIf { a.f },
+        "g".takeIf { a.g },
+        "begin".takeIf { a.begin },
+        "program mode".takeIf { a.prgm },
+        "running".takeIf { a.running },
+        a.pending,
+    ).joinToString(", ")
+
     // Bezel frame, then the glass.
     Box(
         modifier
+            .clearAndSetSemantics {
+                contentDescription = spoken
+                liveRegion = LiveRegionMode.Polite
+                customActions = listOf(
+                    CustomAccessibilityAction("Copy X") { onCopy(); true },
+                    CustomAccessibilityAction("Paste") { onPaste(); true },
+                    CustomAccessibilityAction("Backspace") { onBackspace(); true },
+                )
+            }
             .clip(RoundedCornerShape(12.dp))
             .background(Brush.verticalGradient(listOf(Palette.bezelEdge, Color.Black)))
             .padding(5.dp)
@@ -249,6 +280,7 @@ private fun Annunciators(display: Display, phosphor: Phosphor, toast: String?, e
 private const val CURSOR_SLOT = "0"
 
 private val WEEKDAYS = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+private val WEEKDAY_NAMES = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
 /** Phosphor glass: glow, scanlines, vignette and a faint reflection. */
 private fun Modifier.crt(p: Phosphor): Modifier = drawWithContent {

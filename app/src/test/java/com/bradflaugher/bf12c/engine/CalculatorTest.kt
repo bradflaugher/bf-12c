@@ -511,4 +511,36 @@ class CalculatorTest {
         c.keys("3")
         assertEquals(listOf(listOf(Key.D3)), c.program)
     }
+
+    @Test fun everyLegendHasASpokenName() {
+        // Screen readers mangle glyphs like yˣ, √x, x≷y and CF₀: every legend is said in plain words.
+        for (key in Key.entries) {
+            for (spoken in listOfNotNull(key.spoken, key.spokenF, key.spokenG)) {
+                assertTrue("$key: \"$spoken\" is not plain text", spoken.all { it.isLetterOrDigit() && it.code < 128 || it == ' ' })
+            }
+        }
+        assertEquals("y to the x", Key.YX.spoken)
+        assertEquals("square root", Key.YX.spokenG)
+        assertEquals("cash flow zero", Key.PV.spokenG)
+        // f 7 sets FIX 7 though the 7 key has no gold legend.
+        assertEquals("fix 7", Key.D7.spokenF)
+        assertEquals(null, Key.ADD.spokenF)
+    }
+
+    @Test fun typedCharacters() {
+        for (d in 0..9) assertEquals(Key.digit(d), Key.typed('0' + d))
+        assertEquals(Key.ADD, Key.typed('+'))
+        assertEquals(Key.SUB, Key.typed('-'))
+        assertEquals(Key.MUL, Key.typed('*'))
+        assertEquals(Key.DIV, Key.typed('/'))
+        assertEquals(Key.DOT, Key.typed(','))
+        assertEquals(Key.YX, Key.typed('^'))
+        assertEquals(null, Key.typed('q'))
+        // Typing "12*3+" on a keyboard is the same as tapping it: 12 ENTER is the UI's Enter key.
+        val c = Calculator()
+        for (k in listOf('1', '2')) c.press(Key.typed(k)!!)
+        c.press(Key.ENTER)
+        for (k in listOf('3', '*')) c.press(Key.typed(k)!!)
+        assertClose("36", c.x)
+    }
 }

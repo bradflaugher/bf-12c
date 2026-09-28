@@ -37,7 +37,8 @@ by Dependabot.
   Kotlin, no Android imports, fully unit-testable.
   - `Calculator.kt` — stack, entry, prefixes (f/g/STO/RCL/GTO), every key's
     function, program mode, persistence (`save`/`restore`).
-  - `Key.kt` — the 39 keys, HP keycodes, legends and the 4×10 layout.
+  - `Key.kt` — the 39 keys, HP keycodes, legends and the 4×10 layout, the
+    spoken names TalkBack reads and the hardware-keyboard character map.
   - `BigMath.kt` — 34-digit exp/ln/pow/sqrt/n!; errors are `CalcError(code)`
     using the 12c's `Error n` numbering.
   - `Finance.kt`, `Dates.kt` — TVM, cash flows, amortization, depreciation,
@@ -78,8 +79,15 @@ by Dependabot.
 
 ## Invariants
 
-- **No permissions.** No `INTERNET`, no backups (`allowBackup=false`, empty
-  extraction rules).
+- **No permissions.** No `INTERNET`, no backups (`allowBackup=false`,
+  extraction rules that include nothing and exclude the preferences from
+  device-to-device transfer).
+- **Every device.** Layout decisions come from the window size
+  (`BoxWithConstraints`), never the device or orientation, so split screen,
+  desktop windows and foldables work. The activity handles all config
+  changes itself. Keys are reachable by touch, mouse, hardware keyboard
+  (`Key.typed`) and TalkBack (`Key.spoken`); keep all four working when
+  adding a key or gesture.
 - CI actions stay pinned to commit SHAs.
 
 ## Build, test, release

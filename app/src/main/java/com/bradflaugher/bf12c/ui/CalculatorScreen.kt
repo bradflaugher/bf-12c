@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,28 +24,52 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.utf16CodePoint
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,6 +77,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bradflaugher.bf12c.CalcViewModel
 import com.bradflaugher.bf12c.engine.Key
+import androidx.compose.ui.input.key.Key as KeyCode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -81,7 +107,8 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
     }
     val copy: () -> Unit = {
         if (vm.haptics) view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-        scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("x", vm.display.full))) }
+        // Through the engine's queue, so Ctrl+C right after typing copies what was typed.
+        scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("x", vm.copyX()))) }
         toast = "COPIED"
     }
     val paste: () -> Unit = {
@@ -104,15 +131,56 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
         vm.backspace()
     }
 
+    // A hardware keyboard (ChromeOS, tablets, desktop windows) types into the calculator.
+    val onHardwareKey: (KeyEvent) -> Boolean = handler@{ e ->
+        if (e.type != KeyEventType.KeyDown || e.isAltPressed || e.isMetaPressed) return@handler false
+        if (e.isCtrlPressed) {
+            when (e.key) {
+                KeyCode.C -> copy()
+                KeyCode.V -> paste()
+                else -> return@handler false
+            }
+            return@handler true
+        }
+        when (e.key) {
+            KeyCode.Escape -> if (vm.menuOpen) vm.closeMenu() else return@handler false
+            // The menu has its own buttons; only Esc reaches past it.
+            else -> if (vm.menuOpen) return@handler false else when (e.key) {
+                KeyCode.Enter, KeyCode.NumPadEnter -> vm.press(Key.ENTER)
+                KeyCode.Backspace -> vm.backspace()
+                KeyCode.Delete -> vm.press(Key.CLX)
+                else -> vm.press(Key.typed(e.utf16CodePoint.toChar()) ?: return@handler false)
+            }
+        }
+        true
+    }
+    val focus = remember { FocusRequester() }
+    // Take focus at start and back from the menu, so typing always reaches the keys.
+    LaunchedEffect(vm.menuOpen) { if (!vm.menuOpen) focus.requestFocus() }
+
     Box(
         Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Color(0xFF1A1B1C), Palette.bezel, Color(0xFF050505))))
+            .onKeyEvent(onHardwareKey)
+            .focusRequester(focus)
+            .focusTarget()
             .safeDrawingPadding(),
     ) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp)) {
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .padding(10.dp)
+                // While the menu is up, TalkBack stays in the menu.
+                .then(if (vm.menuOpen) Modifier.clearAndSetSemantics {} else Modifier),
+            contentAlignment = Alignment.Center,
+        ) {
+            // Tablets and unfolded foldables print the legends bigger; phones stay at 1.
+            val scale = (minOf(maxWidth, maxHeight) / 400.dp).coerceIn(1f, 2f)
+            CompositionLocalProvider(LocalKeyScale provides scale) {
             if (maxWidth > maxHeight) {
-                Column(Modifier.fillMaxSize()) {
+                // Ultra-wide desktop windows would stretch the keys flat: cap the aspect.
+                Column(Modifier.fillMaxHeight().widthIn(max = maxHeight * 2.6f)) {
                     Row(Modifier.fillMaxWidth().weight(0.29f)) {
                         DisplayPanel(display, vm.phosphor, expanded = false, toast, backspace, copy, paste, Modifier.weight(1f).fillMaxHeight())
                         Spacer(Modifier.width(12.dp))
@@ -123,14 +191,17 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
                     LandscapeKeyboard(shift, ink, onKey, Modifier.weight(0.71f).fillMaxWidth())
                 }
             } else {
+                // Short phones give the keys more of the height so they stay big enough to hit.
+                val displayShare = if (maxHeight < 700.dp) 0.24f else 0.3f
                 Column(Modifier.fillMaxSize()) {
                     BrandPlate(Modifier.fillMaxWidth().height(34.dp), compact = true)
                     Spacer(Modifier.height(8.dp))
-                    DisplayPanel(display, vm.phosphor, expanded = true, toast, backspace, copy, paste, Modifier.fillMaxWidth().weight(0.3f))
+                    DisplayPanel(display, vm.phosphor, expanded = true, toast, backspace, copy, paste, Modifier.fillMaxWidth().weight(displayShare))
                     Spacer(Modifier.height(6.dp))
                     GoldStripe()
-                    PortraitKeyboard(shift, ink, onKey, Modifier.weight(0.7f).fillMaxWidth())
+                    PortraitKeyboard(shift, ink, onKey, Modifier.weight(1f - displayShare).fillMaxWidth())
                 }
+            }
             }
         }
         // Back closes the menu instead of leaving the app.
@@ -207,7 +278,7 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
         key = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 19.sp, shadow = glow?.copy(blurRadius = 8f)),
         body = TextStyle(color = ink.copy(alpha = 0.82f), fontFamily = Fonts.crt, fontSize = 19.sp, lineHeight = 21.sp),
     )
-    var help by remember { mutableStateOf(false) }
+    var help by rememberSaveable { mutableStateOf(false) }
     val uri = LocalUriHandler.current
     // Back steps out of the manual before it closes the menu.
     BackHandler(enabled = help) { help = false }
@@ -215,7 +286,11 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.82f))
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { vm.closeMenu() }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClickLabel = "Close menu",
+            ) { vm.closeMenu() }
             .safeDrawingPadding(),
         contentAlignment = Alignment.Center,
     ) {
@@ -227,10 +302,21 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
                 .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFF030704))
                 .border(1.dp, ink.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                // Swallow taps on the panel so they don't close the menu; not a control.
+                .pointerInput(Unit) { detectTapGestures {} }
+                .semantics {
+                    paneTitle = if (help) "Manual" else "System menu"
+                    isTraversalGroup = true
+                }
                 .padding(horizontal = 18.dp, vertical = 14.dp),
         ) {
-            BasicText(if (help) "BF-12C MANUAL" else "BF-12C SYSTEM", style = style.title, maxLines = 1, softWrap = false)
+            BasicText(
+                if (help) "BF-12C MANUAL" else "BF-12C SYSTEM",
+                style = style.title,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.semantics { heading() },
+            )
             Rule(ink, Modifier.padding(top = 8.dp, bottom = 4.dp))
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 if (help) {
@@ -240,7 +326,7 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
                     }
                 } else {
                     Section("PHOSPHOR", style)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FlowRow(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         for (option in Phosphor.entries) {
                             val selected = option == p
                             BasicText(
@@ -248,18 +334,21 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
                                 style = style.item.copy(fontSize = 20.sp, color = if (selected) ink else ink.copy(alpha = 0.5f)),
                                 maxLines = 1,
                                 softWrap = false,
-                                modifier = Modifier.clickable { vm.selectPhosphor(option) }.padding(vertical = 6.dp),
+                                modifier = Modifier
+                                    .selectable(selected, role = Role.RadioButton) { vm.selectPhosphor(option) }
+                                    .padding(vertical = 6.dp),
                             )
                         }
                     }
                     Section("SETTINGS", style)
-                    MenuItem("HAPTICS", if (vm.haptics) "ON" else "OFF", style) { vm.toggleHaptics() }
+                    MenuItem("HAPTICS", if (vm.haptics) "ON" else "OFF", style, checked = vm.haptics) { vm.toggleHaptics() }
                     Section("CLIPBOARD", style)
                     MenuItem("COPY X", null, style, onClick = onCopy)
                     MenuItem("PASTE X", null, style, onClick = onPaste)
                     Section("HELP", style)
                     MenuItem("MANUAL", null, style) { help = true }
-                    MenuItem("PRIVACY POLICY", null, style) { uri.openUri(PRIVACY_POLICY_URL) }
+                    // A device with no browser (kiosks, some test devices) must not crash here.
+                    MenuItem("PRIVACY POLICY", null, style) { runCatching { uri.openUri(PRIVACY_POLICY_URL) } }
                 }
             }
             Rule(ink, Modifier.padding(top = 6.dp, bottom = 2.dp))
@@ -289,17 +378,36 @@ private fun Rule(ink: Color, modifier: Modifier = Modifier) {
 
 @Composable
 private fun Section(title: String, style: MenuStyle) {
-    BasicText(title, style = style.section, maxLines = 1, modifier = Modifier.padding(top = 12.dp, bottom = 2.dp))
+    BasicText(title, style = style.section, maxLines = 1, modifier = Modifier.padding(top = 12.dp, bottom = 2.dp).semantics { heading() })
 }
 
-/** "> LABEL ........ VALUE" with a drawn dot leader that stretches to fit, never wraps. */
+/**
+ * "> LABEL ........ VALUE" with a drawn dot leader that stretches to fit, never wraps.
+ * A [checked] item is a switch; TalkBack hears its label and state, not the dots.
+ */
 @Composable
-private fun MenuItem(label: String, value: String?, style: MenuStyle, prefix: String = ">", onClick: () -> Unit) {
+private fun MenuItem(
+    label: String,
+    value: String?,
+    style: MenuStyle,
+    prefix: String = ">",
+    checked: Boolean? = null,
+    onClick: () -> Unit,
+) {
+    val action = if (checked != null) {
+        Modifier.toggleable(checked, role = Role.Switch) { onClick() }
+    } else {
+        Modifier.clickable(role = Role.Button, onClick = onClick)
+    }
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 6.dp),
+        Modifier
+            .fillMaxWidth()
+            .then(action)
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BasicText("$prefix $label", style = style.item, maxLines = 1, softWrap = false)
+        BasicText(prefix, style = style.item, maxLines = 1, softWrap = false, modifier = Modifier.clearAndSetSemantics {})
+        BasicText(" $label", style = style.item, maxLines = 1, softWrap = false)
         if (value != null) {
             val dot = style.ink.copy(alpha = 0.4f)
             Spacer(
@@ -318,7 +426,8 @@ private fun MenuItem(label: String, value: String?, style: MenuStyle, prefix: St
                         }
                     },
             )
-            BasicText(value, style = style.item, maxLines = 1, softWrap = false)
+            val valueSemantics = if (checked != null) Modifier.clearAndSetSemantics {} else Modifier
+            BasicText(value, style = style.item, maxLines = 1, softWrap = false, modifier = valueSemantics)
         }
     }
 }
@@ -351,6 +460,12 @@ private val MANUAL: List<Pair<String, List<Pair<String, String>>>> = listOf(
         "f f · g g" to "Cancel a pressed f or g.",
         "Long-press" to "Copy X from the display.",
         "Double-tap" to "Paste a number into X.",
+    ),
+    "KEYBOARD" to listOf(
+        "0–9 . +" to "Type digits and − × ÷ (also * /) on a hardware keyboard.",
+        "Enter" to "ENTER. Backspace erases, Delete is CLx.",
+        "f g e ^ %" to "f, g, EEX, yˣ and %.",
+        "Ctrl C · V" to "Copy and paste X. Esc closes this menu.",
     ),
     "FINANCE" to listOf(
         "TVM" to "n i PV PMT FV. Key a value, then the key to store it. Press a key right after another TVM key to solve for it.",

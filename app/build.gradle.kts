@@ -67,6 +67,13 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Play reads the dependency list from the bundle; the sideloaded APK doesn't
+    // need Google's encrypted copy of it.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
 }
 
 kotlin {

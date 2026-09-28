@@ -48,7 +48,21 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   paste stores it. The `ON` key opens a system menu with four phosphors:
   P1 green, P3 amber, ice, and a classic 12c LCD; back closes it.
   Pressing a lit `f` or `g` again cancels it (the lit key is ringed).
-- **No permissions at all.** No network, no backups, no analytics.
+- **Every screen.** Phones, tablets, foldables and Chromebooks, in split
+  screen or a resizable desktop window. The layout follows the window, not
+  the device; tablets and unfolded foldables print the legends bigger, and
+  ultra-wide windows keep the keys in proportion. Nothing restarts on a fold,
+  resize or display change.
+- **Hardware keyboard.** Digits, `.`, `+ − * /` (`x` works too), `Enter`,
+  `Backspace` (backspace), `Delete` (CLx), `f`, `g`, `e` (EEX), `^` (yˣ),
+  `%`, `Ctrl+C` / `Ctrl+V` to copy / paste X, and `Esc` to close the menu.
+- **TalkBack.** Every key reads in words ("y to the x, f bond price, g
+  square root"), or just the shifted function while `f` or `g` is lit.
+  The display announces each result and offers Copy X, Paste and
+  Backspace as actions. The ON menu is a proper pane with headings, radio
+  buttons and a switch.
+- **No permissions at all.** No network, no backups or device-to-device
+  transfer, no analytics.
 
 ## Latest Android, no compatibility code
 
@@ -91,7 +105,7 @@ a tiny keystroke DSL (`"30 g n 6.5 g i 100000 PV 0 FV PMT"`, see
 - `FormatTest`, `ProgramParserTest` — display formatting, paste parsing,
   program-line merging, keycodes and mnemonics.
 - `InvariantsTest` — the project rules: no Android in the engine, no
-  permissions, no backups, CI actions pinned to SHAs, compileSdk matching
+  permissions, no backups or device transfer, CI actions pinned to SHAs, compileSdk matching
   targetSdk, and no `SDK_INT` checks.
 
 GitHub Actions runs them on every pull request and push to `main`
