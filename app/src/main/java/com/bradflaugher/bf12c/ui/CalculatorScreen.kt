@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -207,6 +208,7 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
         body = TextStyle(color = ink.copy(alpha = 0.82f), fontFamily = Fonts.crt, fontSize = 19.sp, lineHeight = 21.sp),
     )
     var help by remember { mutableStateOf(false) }
+    val uri = LocalUriHandler.current
     // Back steps out of the manual before it closes the menu.
     BackHandler(enabled = help) { help = false }
     Box(
@@ -257,6 +259,7 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
                     MenuItem("PASTE X", null, style, onClick = onPaste)
                     Section("HELP", style)
                     MenuItem("MANUAL", null, style) { help = true }
+                    MenuItem("PRIVACY POLICY", null, style) { uri.openUri(PRIVACY_POLICY_URL) }
                 }
             }
             Rule(ink, Modifier.padding(top = 6.dp, bottom = 2.dp))
@@ -328,6 +331,9 @@ private fun ManualRow(key: String, text: String, style: MenuStyle) {
         BasicText(text, style = style.body, modifier = Modifier.weight(0.64f))
     }
 }
+
+/** The Play privacy policy; the browser opens it, bf-12c itself has no network access. */
+private const val PRIVACY_POLICY_URL = "https://bradflaugher.com/privacy/bf-12c/"
 
 private val MANUAL: List<Pair<String, List<Pair<String, String>>>> = listOf(
     "BASICS" to listOf(
