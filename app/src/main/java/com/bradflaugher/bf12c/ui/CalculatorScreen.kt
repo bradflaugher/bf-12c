@@ -107,7 +107,8 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
     }
     val copy: () -> Unit = {
         if (vm.haptics) view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-        scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("x", vm.display.full))) }
+        // Through the engine's queue, so Ctrl+C right after typing copies what was typed.
+        scope.launch { clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("x", vm.copyX()))) }
         toast = "COPIED"
     }
     val paste: () -> Unit = {

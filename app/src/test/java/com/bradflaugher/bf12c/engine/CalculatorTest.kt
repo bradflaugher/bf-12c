@@ -522,6 +522,9 @@ class CalculatorTest {
         assertEquals("y to the x", Key.YX.spoken)
         assertEquals("square root", Key.YX.spokenG)
         assertEquals("cash flow zero", Key.PV.spokenG)
+        // f 7 sets FIX 7 though the 7 key has no gold legend.
+        assertEquals("fix 7", Key.D7.spokenF)
+        assertEquals(null, Key.ADD.spokenF)
     }
 
     @Test fun typedCharacters() {

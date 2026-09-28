@@ -40,7 +40,9 @@ fun FitText(
     BoxWithConstraints(modifier, contentAlignment = contentAlignment) {
         val width = constraints.maxWidth
         val height = constraints.maxHeight
-        val fontSize = remember(sizing, style, maxFontSize, minFontSize, step, width, height) {
+        // The measurer is per density, so a font-scale change (handled in place,
+        // without an activity restart) refits too.
+        val fontSize = remember(measurer, sizing, style, maxFontSize, minFontSize, step, width, height) {
             val reference = style.copy(fontSize = maxFontSize)
             var scale = 1f
             for (s in sizing) {

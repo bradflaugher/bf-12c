@@ -120,6 +120,8 @@ fun DisplayPanel(
     val spoken = listOfNotNull(
         toast,
         if (booted) display.main else BOOT,
+        ERROR_NAMES[display.main.removePrefix("Error ").toIntOrNull()]?.lowercase()?.takeIf { display.isError },
+        display.weekday?.let { "day of week $it, ${WEEKDAY_NAMES[it - 1]}" },
         "f".takeIf { a.f },
         "g".takeIf { a.g },
         "begin".takeIf { a.begin },
@@ -278,6 +280,7 @@ private fun Annunciators(display: Display, phosphor: Phosphor, toast: String?, e
 private const val CURSOR_SLOT = "0"
 
 private val WEEKDAYS = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+private val WEEKDAY_NAMES = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
 /** Phosphor glass: glow, scanlines, vignette and a faint reflection. */
 private fun Modifier.crt(p: Phosphor): Modifier = drawWithContent {

@@ -54,8 +54,11 @@ enum class Key(val code: Int, val label: String, val f: String? = null, val g: S
     /** The primary legend as a screen reader should say it. */
     val spoken: String get() = speak(label)
 
-    /** The gold and blue legends as a screen reader should say them. */
-    val spokenF: String? get() = f?.let(::speak)
+    /**
+     * The gold and blue legends as a screen reader should say them. The digits
+     * have no printed gold legend, but f and a digit sets FIX.
+     */
+    val spokenF: String? get() = f?.let(::speak) ?: digit?.let { "fix $it" }
     val spokenG: String? get() = g?.let(::speak)
 
     companion object {
