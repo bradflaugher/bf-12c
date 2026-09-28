@@ -50,19 +50,28 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   Pressing a lit `f` or `g` again cancels it (the lit key is ringed).
 - **No permissions at all.** No network, no backups, no analytics.
 
+## Latest Android, no compatibility code
+
+bf-12c targets the latest public stable Android and the toolchain tracks
+the latest Android Gradle Plugin and Gradle. It installs on Android 13 and
+up, because that is the newest API the code uses (`BigDecimal.sqrt`), not
+because it carries code for older phones: there are no version checks.
+Full policy in [`AGENTS.md`](AGENTS.md).
+
 ## Install
 
 Grab `bf-12c.apk` from the [latest release](../../releases/latest) and
 sideload it. Every push to `main` publishes a single date-labeled release
-(`vYYYY.MM.DD.N`) and deletes the previous one. Verify with the attached
-`bf-12c.apk.sha256`.
+(`vYYYY.MM.DD.N`) and deletes the previous one. The release also includes
+`bf-12c.aab` and `mapping.txt` for Google Play. Verify the APK with the
+attached `bf-12c.apk.sha256`.
 
-Android 17 (API 37) or newer only — see `AGENTS.md` for the latest-only policy.
+Requires Android 13 or newer.
 
 ## Build
 
 ```sh
-./gradlew lint test assembleDebug     # what CI runs (plus assembleRelease)
+./gradlew lint test assembleDebug     # what CI runs (plus assembleRelease and bundleRelease)
 ```
 
 ## Tests
@@ -82,7 +91,8 @@ a tiny keystroke DSL (`"30 g n 6.5 g i 100000 PV 0 FV PMT"`, see
 - `FormatTest`, `ProgramParserTest` — display formatting, paste parsing,
   program-line merging, keycodes and mnemonics.
 - `InvariantsTest` — the project rules: no Android in the engine, no
-  permissions, no backups, CI actions pinned to SHAs, equal SDK levels.
+  permissions, no backups, CI actions pinned to SHAs, compileSdk matching
+  targetSdk, and no `SDK_INT` checks.
 
 GitHub Actions runs them on every pull request and push to `main`
 (`.github/workflows/ci.yml`, one check each for unit tests and lint, with a

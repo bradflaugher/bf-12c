@@ -1,0 +1,29 @@
+Thirty-four digits, four stack levels, and the keys under your thumbs.
+
+bf-12c is an RPN financial calculator inspired by the classic 12c financial calculator. Landscape is the 4 by 10 keyboard: gold f legends above, blue g legends below, and the tall ENTER key. Portrait folds that keyboard in half, financial keys on top and the number pad where your thumbs are. In the app drawer it shows up as Calculator (bf-12c).
+
+THE STACK
+• Four levels, X Y Z T, plus LSTx. Stack lift follows the classic rules, and continuous memory keeps the stack, the registers, and the program across restarts.
+• Every register holds 34 significant digits. f EEX shows all of them, f 0 through f 9 sets fixed decimals, and f . sets scientific notation. When the display rounds, the full value is shown beneath it.
+
+THE FINANCIAL KEYS
+• Time value of money: n, i, PV, PMT, FV, begin or end mode, and multiply or divide by 12.
+• Cash flows with NPV and IRR, including CF0, CFj, and Nj, plus amortization and simple interest.
+• Straight-line, sum-of-the-years-digits, and declining-balance depreciation. Bond price and yield.
+• Dates and the days between them, in day-month-year or month-day-year.
+• Percent, percent change, and percent of total. Means, standard deviation, weighted mean, linear estimate, and correlation.
+• Twenty storage registers, with storage arithmetic. y to the x, square root, e to the x, natural log, factorial, fraction, integer, and round.
+
+PROGRAMS
+• f P/R opens program mode: 99 merged lines, GTO, x<=y, x=0, R/S, pause, and single-step in both directions.
+• The listing shows the classic keycodes and a readable mnemonic beside them.
+
+ON THE GLASS
+• Swipe the display left to backspace, or press g minus. In program mode that deletes the line. Long-press copies X. Double-tap pastes.
+• Paste understands numbers the way people copy them: 1,234.50, a leading dollar sign, parentheses for a negative, a trailing percent, or scientific notation. A pasted value behaves like a recall, so PV after a paste stores it.
+• The ON key opens a system menu with four phosphors: P1 green, P3 amber, ice, and a classic 12c LCD. Back closes it. Press a lit f or g again and that prefix cancels.
+
+NO NONSENSE
+bf-12c is free. No ads. No network. No tracking. No permissions, no analytics, and nothing is backed up off the device. Requires Android 13 or newer.
+
+bf-12c is an independent project and is not affiliated with or endorsed by HP Inc.
