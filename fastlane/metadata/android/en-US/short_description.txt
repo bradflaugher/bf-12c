@@ -1,1 +1,1 @@
-RPN financial calculator. Classic 12c keyboard, 34 digits, programs included.
+RPN financial calculator with a classic keyboard, 34 digits, and programs.

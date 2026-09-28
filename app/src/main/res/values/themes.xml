@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Edge-to-edge is enforced, so the bars are drawn by the app, not colored here. -->
     <style name="Theme.Bf12c" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/bezel</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBackground">@color/bezel</item>
     </style>
     <color name="bezel">#FF0B0C0B</color>
 </resources>

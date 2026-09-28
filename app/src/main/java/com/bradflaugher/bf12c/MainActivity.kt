@@ -23,17 +23,25 @@ class MainActivity : ComponentActivity() {
         applySystemBars(newConfig)
     }
 
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: Configuration) {
+        super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
+        applySystemBars(newConfig)
+    }
+
     // Coming back from another app can bring the bars back; hide them again.
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) applySystemBars(resources.configuration)
     }
 
-    /** Landscape is the full 12c keyboard: give it the whole screen. */
+    /**
+     * Landscape is the full 12c keyboard: give it the whole screen. A split-screen or
+     * desktop window shares the screen with other apps, so there the bars stay.
+     */
     private fun applySystemBars(config: Configuration) {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (config.orientation == Configuration.ORIENTATION_LANDSCAPE && !isInMultiWindowMode) {
             controller.hide(WindowInsetsCompat.Type.systemBars())
         } else {
             controller.show(WindowInsetsCompat.Type.systemBars())

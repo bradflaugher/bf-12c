@@ -51,7 +51,57 @@ enum class Key(val code: Int, val label: String, val f: String? = null, val g: S
 
     val digit: Int? get() = if (code in 0..9 && this != DIV) code else null
 
+    /** The primary legend as a screen reader should say it. */
+    val spoken: String get() = speak(label)
+
+    /** The gold and blue legends as a screen reader should say them. */
+    val spokenF: String? get() = f?.let(::speak)
+    val spokenG: String? get() = g?.let(::speak)
+
     companion object {
+        /** Legends whose glyphs a screen reader would mangle, in words. */
+        private val WORDS = mapOf(
+            "12×" to "12 times", "12÷" to "12 divide", "CF₀" to "cash flow zero", "CFⱼ" to "cash flow j",
+            "Nⱼ" to "N j", "CHS" to "change sign", "BEG" to "begin", "MEM" to "memory", "÷" to "divide",
+            "yˣ" to "y to the x", "√x" to "square root", "1/x" to "reciprocal", "eˣ" to "e to the x",
+            "%T" to "percent of total", "LN" to "natural log", "Δ%" to "percent change", "%" to "percent",
+            "FRAC" to "fraction", "INTG" to "integer", "EEX" to "enter exponent", "ALL" to "all digits",
+            "ΔDYS" to "days between dates", "D.MY" to "day month year", "M.DY" to "month day year",
+            "x̄w" to "weighted mean", "×" to "times", "x²" to "x squared", "R/S" to "run stop",
+            "P/R" to "program mode", "PSE" to "pause", "SST" to "single step", "Σ" to "clear statistics",
+            "BST" to "back step", "R↓" to "roll down", "PRGM" to "clear program", "GTO" to "go to",
+            "x≷y" to "x exchange y", "FIN" to "clear financial", "x≤y" to "x less than or equal to y",
+            "CLx" to "clear x", "REG" to "clear registers", "x=0" to "x equals 0", "ENTER" to "enter",
+            "PREFIX" to "clear prefix", "LSTx" to "last x", "x̂,r" to "x estimate", "ŷ,r" to "y estimate",
+            "n!" to "factorial", "−" to "minus", "←" to "backspace", "ON" to "menu", "STO" to "store",
+            "RCL" to "recall", "x̄" to "mean", "." to "decimal point", "SCI" to "scientific",
+            "s" to "standard deviation", "Σ+" to "sigma plus", "Σ−" to "sigma minus", "+" to "plus",
+            "AMORT" to "amortize", "INT" to "simple interest", "RND" to "round", "SL" to "straight line",
+            "SOYD" to "sum of the years digits", "DB" to "declining balance", "DATE" to "date",
+            "PRICE" to "bond price", "YTM" to "bond yield",
+        )
+
+        private fun speak(legend: String) = WORDS[legend] ?: legend
+
+        /**
+         * The key a typed character presses on a hardware keyboard, or null.
+         * Enter, backspace and the other non-character keys are mapped by the UI.
+         */
+        fun typed(c: Char): Key? = when (c) {
+            in '0'..'9' -> digit(c - '0')
+            '.', ',' -> DOT
+            '+' -> ADD
+            '-', '−' -> SUB
+            '*', '×', 'x', 'X' -> MUL
+            '/', '÷' -> DIV
+            '^' -> YX
+            '%' -> PCT
+            'e', 'E' -> EEX
+            'f', 'F' -> F
+            'g', 'G' -> G
+            else -> null
+        }
+
         /** Landscape layout: 4 rows of 10. ENTER occupies row 3 and row 4 of column 6. */
         val ROWS: List<List<Key>> = listOf(
             listOf(N, I, PV, PMT, FV, CHS, D7, D8, D9, DIV),

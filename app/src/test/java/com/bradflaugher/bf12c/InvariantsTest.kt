@@ -33,10 +33,14 @@ class InvariantsTest {
     }
 
     @Test fun backupRulesStayEmpty() {
-        for (name in listOf("backup_rules.xml", "data_extraction_rules.xml")) {
-            val xml = File(app, "src/main/res/xml/$name").readText()
-            assertFalse("$name must not include anything", xml.contains("<include"))
-        }
+        val xml = File(app, "src/main/res/xml/data_extraction_rules.xml").readText()
+        assertFalse("data_extraction_rules.xml must not include anything", xml.contains("<include"))
+        // allowBackup=false stops cloud backup but not device-to-device transfer.
+        val transfer = Regex("<device-transfer>(.*?)</device-transfer>", RegexOption.DOT_MATCHES_ALL).find(xml)
+        assertTrue(
+            "device-to-device transfer must exclude the preferences",
+            transfer?.groupValues?.get(1)?.contains("<exclude domain=\"sharedpref\" path=\".\"") == true,
+        )
     }
 
     @Test fun launcherLabel() {

@@ -1,6 +1,6 @@
 Thirty-four digits, four stack levels, and the keys under your thumbs.
 
-bf-12c is an RPN financial calculator inspired by the classic 12c financial calculator. Landscape is the 4 by 10 keyboard: gold f legends above, blue g legends below, and the tall ENTER key. Portrait folds that keyboard in half, financial keys on top and the number pad where your thumbs are. In the app drawer it shows up as Calculator (bf-12c).
+bf-12c is an RPN financial calculator inspired by the classic 12c financial calculator. Landscape is the 4 by 10 keyboard: gold f legends above, blue g legends below, and the tall ENTER key. Portrait folds that keyboard in half, financial keys on top and the number pad where your thumbs are.
 
 THE STACK
 • Four levels, X Y Z T, plus LSTx. Stack lift follows the classic rules, and continuous memory keeps the stack, the registers, and the program across restarts.
@@ -21,7 +21,12 @@ PROGRAMS
 ON THE GLASS
 • Swipe the display left to backspace, or press g minus. In program mode that deletes the line. Long-press copies X. Double-tap pastes.
 • Paste understands numbers the way people copy them: 1,234.50, a leading dollar sign, parentheses for a negative, a trailing percent, or scientific notation. A pasted value behaves like a recall, so PV after a paste stores it.
-• The ON key opens a system menu with four phosphors: P1 green, P3 amber, ice, and a classic 12c LCD. Back closes it. Press a lit f or g again and that prefix cancels.
+• The ON key opens a system menu with four phosphors: P1 green, P3 amber, ice, and a classic LCD. Back closes it. Press a lit f or g again and that prefix cancels.
+
+EVERY SCREEN
+• Phones, tablets, foldables, and Chromebooks, in split screen or a resizable window. Tablets get bigger legends; the layout follows the window, not the device.
+• Type on a hardware keyboard: digits, + − * /, Enter, Backspace, Ctrl+C and Ctrl+V.
+• TalkBack reads every key in words (y to the x, square root, roll down) and announces each result.
 
 NO NONSENSE
 bf-12c is free. No ads. No network. No tracking. No permissions, no analytics, and nothing is backed up off the device. Requires Android 13 or newer.
