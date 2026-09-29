@@ -3,6 +3,13 @@
 
     <!-- No permissions at all: no network, no storage, nothing leaves the device. -->
 
+    <!-- Touch is optional: a Chromebook or desktop with only a keyboard and
+         mouse (or trackpad) can install it and use every key. Without this, Play
+         assumes a touchscreen is required. -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
     <!-- hasFragileUserData: uninstalling offers to keep the stack, registers and program on the device. -->
     <application
         android:allowBackup="false"

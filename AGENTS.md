@@ -59,6 +59,8 @@ by Dependabot.
   and `InvariantsTest` (enforces the invariants below).
 - `tools/icon/gen_icon.py` — generates the adaptive launcher icon
   (`res/drawable/ic_launcher_*.xml`). Edit the script, not the XML.
+- `tools/screenshots/shoot.py` — captures the Play and README screenshots
+  from the real app on an emulator (see Visual checks).
 
 ## Behavioral rules
 
@@ -87,7 +89,9 @@ by Dependabot.
   desktop windows and foldables work. The activity handles all config
   changes itself. Keys are reachable by touch, mouse, hardware keyboard
   (`Key.typed`) and TalkBack (`Key.spoken`); keep all four working when
-  adding a key or gesture.
+  adding a key or gesture. The manifest declares the touchscreen not
+  required, so Play offers the app to keyboard-and-mouse Chromebooks; never
+  add a `<uses-feature>` (or a permission implying one) that is required.
 - CI actions stay pinned to commit SHAs.
 
 ## Build, test, release
@@ -115,3 +119,8 @@ unzip `emulator-linux_x64-*.zip` into `.emu/sdk/` and the
 `.emu/`. Drive it with `adb shell input tap x y` and capture with
 `adb exec-out screencap -p > shot.png`. Look at both orientations
 (`adb shell settings put system user_rotation 0|1`).
+
+The store and README screenshots come from `tools/screenshots/shoot.py
+SERIAL phone|tab7|tab10` on such an emulator (after `./gradlew
+assembleDebug`); rerun all three after a visible UI change and look at
+every PNG it writes. Use an AVD without a display cutout.

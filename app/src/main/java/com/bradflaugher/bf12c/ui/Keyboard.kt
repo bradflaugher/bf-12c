@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,6 +38,7 @@ import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -46,6 +48,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -305,14 +308,30 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, pressed: Boolean, active:
     }
 }
 
+/**
+ * ENTER's letters stacked down the tall key. On a short window (a 16:9 phone,
+ * split screen) the key is too short for five letters at full size, so they
+ * shrink to fit instead of the last one sliding under the blue legend.
+ */
 @Composable
 private fun VerticalLabel(text: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        for (c in text) {
-            BasicText(
-                c.toString(),
-                style = TextStyle(color = color, fontFamily = Fonts.mono, fontWeight = FontWeight.Bold, fontSize = 15.sp * LocalKeyScale.current),
-            )
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val fit = with(LocalDensity.current) { (maxHeight / (text.length * VERTICAL_LINE_HEIGHT)).toSp() }
+        val full = 15.sp * LocalKeyScale.current
+        val size = if (fit < full) fit else full
+        val style = TextStyle(
+            color = color,
+            fontFamily = Fonts.mono,
+            fontWeight = FontWeight.Bold,
+            fontSize = size,
+            lineHeight = size * VERTICAL_LINE_HEIGHT,
+            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
+        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            for (c in text) BasicText(c.toString(), style = style, maxLines = 1, softWrap = false)
         }
     }
 }
+
+/** Each stacked letter's line, in ems; roomy enough for the mono font's ascent and descent. */
+private const val VERTICAL_LINE_HEIGHT = 1.25f
