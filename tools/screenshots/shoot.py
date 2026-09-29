@@ -13,11 +13,12 @@ The script installs the debug APK, sizes the screen to an exact 9:16 at a
 real density for that class, types each scene on the calculator's own keys
 (found through their TalkBack labels) and writes 24-bit PNGs into
 fastlane/metadata/android/en-US/images/. `phone` and `tab10` also refresh
-the README shots in docs/screenshots/. It puts the screen size, density and
-rotation back when it is done.
+the README shots in docs/screenshots/. When it is done it puts back exactly
+the screen size and density overrides, rotation and settings it found.
 """
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -139,6 +140,45 @@ class Device:
         print(path.relative_to(REPO))
 
 
+# Every setting the script changes, as (namespace, key), so it can put back exactly what was there.
+SETTINGS = [
+    ("system", "accelerometer_rotation"),
+    ("system", "user_rotation"),
+    ("secure", "immersive_mode_confirmations"),
+    ("global", "sysui_demo_allowed"),
+]
+
+
+def save_display(d):
+    """The emulator's display overrides and settings before the run."""
+    size = d.adb("shell", "wm", "size", capture=True).decode()
+    density = d.adb("shell", "wm", "density", capture=True).decode()
+    override_size = re.search(r"Override size: (\d+x\d+)", size)
+    override_density = re.search(r"Override density: (\d+)", density)
+    return {
+        "physical": tuple(map(int, re.search(r"Physical size: (\d+)x(\d+)", size).groups())),
+        "size": override_size.group(1) if override_size else "reset",
+        "density": override_density.group(1) if override_density else "reset",
+        "settings": {
+            (ns, key): d.adb("shell", "settings", "get", ns, key, capture=True).decode().strip()
+            for ns, key in SETTINGS
+        },
+    }
+
+
+def restore_display(d, saved):
+    """Puts back exactly what [save_display] found, overrides and all."""
+    d.sh("am", "broadcast", "-a", "com.android.systemui.demo", "-e", "command", "exit")
+    d.sh("wm", "size", saved["size"])
+    d.sh("wm", "density", saved["density"])
+    for (ns, key), value in saved["settings"].items():
+        if value == "null":
+            d.sh("settings", "delete", ns, key)
+        else:
+            # adb shell joins its arguments into one command line: quote, or "" vanishes.
+            d.sh("settings", "put", ns, key, shlex.quote(value))
+
+
 def demo_status_bar(d):
     # Landscape hides the bars; skip the one-time "Viewing full screen" hint.
     d.sh("settings", "put", "secure", "immersive_mode_confirmations", "confirmed")
@@ -218,9 +258,9 @@ def main():
     (w, h), density, out = DEVICES[sys.argv[2]]
     apk = REPO / "app/build/outputs/apk/debug/app-debug.apk"
     d.adb("install", "-r", str(apk))
+    saved = save_display(d)
     # wm size is in the display's natural orientation; a tablet may be landscape-first.
-    natural = d.adb("shell", "wm", "size", capture=True).decode()
-    pw, ph = map(int, re.search(r"Physical size: (\d+)x(\d+)", natural).groups())
+    pw, ph = saved["physical"]
     d.sh("wm", "size", f"{h}x{w}" if pw > ph else f"{w}x{h}")
     d.sh("wm", "density", str(density))
     demo_status_bar(d)
@@ -229,10 +269,7 @@ def main():
             old.unlink()
         (phone if sys.argv[2] == "phone" else tablet)(d, out)
     finally:
-        d.sh("am", "broadcast", "-a", "com.android.systemui.demo", "-e", "command", "exit")
-        d.sh("wm", "size", "reset")
-        d.sh("wm", "density", "reset")
-        d.sh("settings", "put", "system", "accelerometer_rotation", "1")
+        restore_display(d, saved)
     if sys.argv[2] == "phone":
         for name, src in {
             "portrait.png": "1_portrait.png", "landscape.png": "2_landscape.png",
