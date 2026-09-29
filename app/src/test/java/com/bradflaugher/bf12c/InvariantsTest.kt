@@ -9,7 +9,7 @@ import java.io.File
 
 /**
  * Guards the project rules in AGENTS.md that a compiler can't: a pure engine,
- * no permissions, no backups, and CI actions pinned to commit SHAs.
+ * no permissions, optional touch, no backups, and CI actions pinned to commit SHAs.
  * Unit tests run with the app module as the working directory.
  */
 class InvariantsTest {
@@ -30,6 +30,14 @@ class InvariantsTest {
         val manifest = File(app, "src/main/AndroidManifest.xml").readText()
         assertFalse("no permissions allowed", manifest.contains("<uses-permission"))
         assertTrue("backups must stay off", manifest.contains("android:allowBackup=\"false\""))
+    }
+
+    @Test fun touchscreenIsOptional() {
+        // Without this Play treats touch as required and hides the app from
+        // keyboard-and-mouse Chromebooks, which drive every key just fine.
+        val manifest = File(app, "src/main/AndroidManifest.xml").readText()
+        val touch = Regex("""<uses-feature\s+android:name="android.hardware.touchscreen"\s+android:required="false"\s*/>""")
+        assertTrue("touchscreen must be declared not required", touch.containsMatchIn(manifest))
     }
 
     @Test fun backupRulesStayEmpty() {

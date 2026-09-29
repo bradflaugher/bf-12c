@@ -87,7 +87,9 @@ by Dependabot.
   desktop windows and foldables work. The activity handles all config
   changes itself. Keys are reachable by touch, mouse, hardware keyboard
   (`Key.typed`) and TalkBack (`Key.spoken`); keep all four working when
-  adding a key or gesture.
+  adding a key or gesture. The manifest declares the touchscreen not
+  required, so Play offers the app to keyboard-and-mouse Chromebooks; never
+  add a `<uses-feature>` (or a permission implying one) that is required.
 - CI actions stay pinned to commit SHAs.
 
 ## Build, test, release
