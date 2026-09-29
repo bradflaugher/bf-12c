@@ -111,8 +111,10 @@ fun DisplayPanel(
     }
 
     val ink = phosphor.ink
+    // The registers and annunciators grow with the keyboard's printing on tablets.
+    val k = LocalKeyScale.current
     val glow = if (phosphor.glow) Shadow(ink.copy(alpha = 0.85f), Offset.Zero, blurRadius = 22f) else null
-    val small = TextStyle(color = phosphor.dim, fontFamily = Fonts.crt, fontSize = 20.sp, shadow = glow?.copy(color = phosphor.dim, blurRadius = 8f))
+    val small = TextStyle(color = phosphor.dim, fontFamily = Fonts.crt, fontSize = 20.sp * k, shadow = glow?.copy(color = phosphor.dim, blurRadius = 8f))
 
     // TalkBack hears one node: what X shows and which annunciators are lit,
     // announced as it changes. The gestures are offered as actions.
@@ -186,12 +188,12 @@ fun DisplayPanel(
             val upperSizing = upper.map { it.second }
             for ((name, value) in upper) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    if (name.isNotEmpty()) BasicText(name, style = small.copy(fontSize = 16.sp))
+                    if (name.isNotEmpty()) BasicText(name, style = small.copy(fontSize = 16.sp * k))
                     Spacer(Modifier.width(10.dp))
                     FitText(
                         value,
                         style = small,
-                        maxFontSize = 20.sp,
+                        maxFontSize = 20.sp * k,
                         minFontSize = 10.sp,
                         modifier = Modifier.weight(1f),
                         sizing = upperSizing,
@@ -240,7 +242,7 @@ fun DisplayPanel(
                 FitText(
                     "≡ " + display.full,
                     style = small,
-                    maxFontSize = 18.sp,
+                    maxFontSize = 18.sp * k,
                     minFontSize = 9.sp,
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.CenterEnd,
@@ -255,9 +257,10 @@ fun DisplayPanel(
 @Composable
 private fun Annunciators(display: Display, phosphor: Phosphor, toast: String?, expanded: Boolean) {
     val a = display.annunciators
-    val on = TextStyle(color = phosphor.ink, fontFamily = Fonts.crt, fontSize = 17.sp)
+    val k = LocalKeyScale.current
+    val on = TextStyle(color = phosphor.ink, fontFamily = Fonts.crt, fontSize = 17.sp * k)
     val off = on.copy(color = phosphor.dim.copy(alpha = 0.28f))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp * k), verticalAlignment = Alignment.CenterVertically) {
         BasicText("f", style = if (a.f) on.copy(color = Palette.goldBright) else off)
         BasicText("g", style = if (a.g) on.copy(color = Palette.blueBright) else off)
         BasicText("BEGIN", style = if (a.begin) on else off)

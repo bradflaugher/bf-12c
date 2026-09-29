@@ -72,6 +72,7 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -175,8 +176,7 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
                 .then(if (vm.menuOpen) Modifier.clearAndSetSemantics {} else Modifier),
             contentAlignment = Alignment.Center,
         ) {
-            // Tablets and unfolded foldables print the legends bigger; phones stay at 1.
-            val scale = (minOf(maxWidth, maxHeight) / 400.dp).coerceIn(1f, 2f)
+            val scale = printScale(maxWidth, maxHeight)
             CompositionLocalProvider(LocalKeyScale provides scale) {
             if (maxWidth > maxHeight) {
                 // Ultra-wide desktop windows would stretch the keys flat: cap the aspect.
@@ -184,7 +184,7 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
                     Row(Modifier.fillMaxWidth().weight(0.29f)) {
                         DisplayPanel(display, vm.phosphor, expanded = false, toast, backspace, copy, paste, Modifier.weight(1f).fillMaxHeight())
                         Spacer(Modifier.width(12.dp))
-                        BrandPlate(Modifier.fillMaxHeight().width(150.dp))
+                        BrandPlate(Modifier.fillMaxHeight().width(150.dp * scale))
                     }
                     Spacer(Modifier.height(4.dp))
                     GoldStripe()
@@ -194,7 +194,7 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
                 // Short phones give the keys more of the height so they stay big enough to hit.
                 val displayShare = if (maxHeight < 700.dp) 0.24f else 0.3f
                 Column(Modifier.fillMaxSize()) {
-                    BrandPlate(Modifier.fillMaxWidth().height(34.dp), compact = true)
+                    BrandPlate(Modifier.fillMaxWidth().height(34.dp * scale), compact = true)
                     Spacer(Modifier.height(8.dp))
                     DisplayPanel(display, vm.phosphor, expanded = true, toast, backspace, copy, paste, Modifier.fillMaxWidth().weight(displayShare))
                     Spacer(Modifier.height(6.dp))
@@ -210,6 +210,9 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
     }
 }
 
+/** Tablets and unfolded foldables print everything bigger; phones stay at 1. */
+private fun printScale(width: Dp, height: Dp): Float = (minOf(width, height) / 400.dp).coerceIn(1f, 2f)
+
 @Composable
 private fun GoldStripe() {
     Box(
@@ -224,14 +227,15 @@ private fun GoldStripe() {
 /** Where the 12c has its logo plate: ours. */
 @Composable
 private fun BrandPlate(modifier: Modifier, compact: Boolean = false) {
+    val k = LocalKeyScale.current
     val gold = TextStyle(color = Palette.gold, fontFamily = Fonts.mono, fontWeight = FontWeight.Bold)
     if (compact) {
         Row(modifier, verticalAlignment = Alignment.CenterVertically) {
             Logo()
             Spacer(Modifier.width(10.dp))
-            BasicText("12C", style = gold.copy(color = Palette.keyLabel, fontSize = 22.sp))
+            BasicText("12C", style = gold.copy(color = Palette.keyLabel, fontSize = 22.sp * k))
             Spacer(Modifier.weight(1f))
-            BasicText("RPN // FINANCIAL", style = gold.copy(fontSize = 11.sp, letterSpacing = 2.sp))
+            BasicText("RPN // FINANCIAL", style = gold.copy(fontSize = 11.sp * k, letterSpacing = 2.sp * k))
         }
         return
     }
@@ -246,21 +250,22 @@ private fun BrandPlate(modifier: Modifier, compact: Boolean = false) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Logo()
             Spacer(Modifier.weight(1f))
-            BasicText("12C", style = gold.copy(color = Palette.keyLabel, fontSize = 30.sp))
+            BasicText("12C", style = gold.copy(color = Palette.keyLabel, fontSize = 30.sp * k))
         }
-        BasicText("RPN // FINANCIAL", style = gold.copy(fontSize = 10.sp, letterSpacing = 2.sp))
+        BasicText("RPN // FINANCIAL", style = gold.copy(fontSize = 10.sp * k, letterSpacing = 2.sp * k))
     }
 }
 
 @Composable
 private fun Logo() {
+    val k = LocalKeyScale.current
     Box(
         Modifier
             .clip(RoundedCornerShape(6.dp))
             .background(Brush.verticalGradient(listOf(Palette.goldBright, Palette.gold)))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = 8.dp * k, vertical = 2.dp * k),
     ) {
-        BasicText("bf", style = TextStyle(color = Color(0xFF1A1206), fontFamily = Fonts.mono, fontWeight = FontWeight.Bold, fontSize = 20.sp))
+        BasicText("bf", style = TextStyle(color = Color(0xFF1A1206), fontFamily = Fonts.mono, fontWeight = FontWeight.Bold, fontSize = 20.sp * k))
     }
 }
 
@@ -270,19 +275,11 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
     val p = vm.phosphor
     val ink = if (p.glow) p.ink else Color(0xFFB9C4A3)
     val glow = if (p.glow) Shadow(p.ink.copy(alpha = 0.8f), blurRadius = 14f) else null
-    val style = MenuStyle(
-        ink = ink,
-        title = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 28.sp, shadow = glow),
-        item = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 23.sp, shadow = glow),
-        section = TextStyle(color = ink.copy(alpha = 0.6f), fontFamily = Fonts.crt, fontSize = 17.sp, letterSpacing = 2.sp),
-        key = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 19.sp, shadow = glow?.copy(blurRadius = 8f)),
-        body = TextStyle(color = ink.copy(alpha = 0.82f), fontFamily = Fonts.crt, fontSize = 19.sp, lineHeight = 21.sp),
-    )
     var help by rememberSaveable { mutableStateOf(false) }
     val uri = LocalUriHandler.current
     // Back steps out of the manual before it closes the menu.
     BackHandler(enabled = help) { help = false }
-    Box(
+    BoxWithConstraints(
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.82f))
@@ -294,11 +291,21 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
             .safeDrawingPadding(),
         contentAlignment = Alignment.Center,
     ) {
+        // Printed as big as the keyboard's, so a tablet's menu isn't a postage stamp.
+        val k = printScale(maxWidth, maxHeight)
+        val style = MenuStyle(
+            ink = ink,
+            title = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 28.sp * k, shadow = glow),
+            item = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 23.sp * k, shadow = glow),
+            section = TextStyle(color = ink.copy(alpha = 0.6f), fontFamily = Fonts.crt, fontSize = 17.sp * k, letterSpacing = 2.sp * k),
+            key = TextStyle(color = ink, fontFamily = Fonts.crt, fontSize = 19.sp * k, shadow = glow?.copy(blurRadius = 8f)),
+            body = TextStyle(color = ink.copy(alpha = 0.82f), fontFamily = Fonts.crt, fontSize = 19.sp * k, lineHeight = 21.sp * k),
+        )
         // Header and footer stay put; only the body scrolls.
         Column(
             Modifier
                 .padding(16.dp)
-                .widthIn(max = 560.dp)
+                .widthIn(max = 560.dp * k)
                 .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFF030704))
                 .border(1.dp, ink.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
@@ -331,7 +338,7 @@ private fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Uni
                             val selected = option == p
                             BasicText(
                                 if (selected) "[${option.title}]" else " ${option.title} ",
-                                style = style.item.copy(fontSize = 20.sp, color = if (selected) ink else ink.copy(alpha = 0.5f)),
+                                style = style.item.copy(fontSize = 20.sp * k, color = if (selected) ink else ink.copy(alpha = 0.5f)),
                                 maxLines = 1,
                                 softWrap = false,
                                 modifier = Modifier
