@@ -99,13 +99,20 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
         prefs.edit { putBoolean("haptics", haptics) }
     }
 
+    /** Engine-thread only: which [runProgram] loop owns the running program. */
+    private var runLoop = 0
+
     private suspend fun runProgram() {
+        // A key queued during a pause or yield can halt the program and a second R/S
+        // restart it; the older loop must then stop instead of stepping alongside.
+        val loop = ++runLoop
         publish()
         var steps = 0
-        while (calc.step()) {
+        while (loop == runLoop && calc.step()) {
             if (calc.pauseRequested) {
                 publish()
                 delay(1000)
+                if (loop != runLoop) return
                 calc.pauseRequested = false
                 publish()
             }
@@ -115,6 +122,7 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
                 delay(1)
             }
         }
+        if (loop != runLoop) return
         calc.pauseRequested = false
         commit()
     }
