@@ -13,14 +13,23 @@ searches next to every other calculator, with a pocket-12c adaptive icon
 
 <table>
   <tr>
-    <td align="center" width="25%"><img src="docs/screenshots/portrait.png" alt="Portrait layout"><p><em><b>Portrait</b> · folded</em></p></td>
-    <td align="center" width="25%"><img src="docs/screenshots/program.png" alt="Program mode"><p><em><b>Program mode</b></em></p></td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/f-shift.png" alt="f shift active"><p><em><b>f shift</b> — gold legends light up</em></p>
-      <img src="docs/screenshots/menu.png" alt="System menu"><p><em><b>ON</b> — green-screen system menu</em></p>
+    <td align="center" width="33%"><img src="docs/screenshots/portrait.png" alt="Portrait layout"><p><em><b>Portrait</b> · folded</em></p></td>
+    <td align="center" width="33%"><img src="docs/screenshots/program.png" alt="Program mode"><p><em><b>Program mode</b></em></p></td>
+    <td align="center" width="33%"><img src="docs/screenshots/menu.png" alt="System menu"><p><em><b>ON</b> — green-screen system menu</em></p></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3">
+      <img src="docs/screenshots/f-shift.png" alt="f shift active" width="49%">
+      <img src="docs/screenshots/amber.png" alt="P3 amber phosphor" width="49%">
+      <p><em><b>f shift</b> — gold legends light up · <b>P3 amber</b>, one of four phosphors</em></p>
     </td>
   </tr>
 </table>
+
+<div align="center">
+  <img src="docs/screenshots/tablet.png" alt="10-inch tablet, landscape">
+  <p><em><b>Tablet</b> — bigger legends, registers and menu; the layout follows the window</em></p>
+</div>
 
 ## What it is
 
@@ -32,7 +41,7 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   the real thing, and continuous memory: everything survives restarts.
 - **34 significant digits** in every register (BigDecimal, not doubles).
   `f EEX` shows ALL digits, `f 0`–`9` sets FIX, `f .` sets SCI. When the
-  display is rounded, the full-precision value is shown beneath it.
+  display is rounded, portrait shows the full-precision value beneath it.
 - **The 12c function set:** TVM (n, i, PV, PMT, FV, BEGIN/END, 12×, 12÷),
   NPV / IRR with CF₀ / CFⱼ / Nⱼ, AMORT, simple interest, SL / SOYD / DB
   depreciation, bond PRICE / YTM, DATE / ΔDYS (D.MY and M.DY), statistics
@@ -50,12 +59,14 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   Pressing a lit `f` or `g` again cancels it (the lit key is ringed).
 - **Every screen.** Phones, tablets, foldables and Chromebooks, in split
   screen or a resizable desktop window. The layout follows the window, not
-  the device; tablets and unfolded foldables print the legends bigger, and
-  ultra-wide windows keep the keys in proportion. Nothing restarts on a fold,
-  resize or display change.
-- **Hardware keyboard.** Digits, `.`, `+ − * /` (`x` works too), `Enter`,
-  `Backspace` (backspace), `Delete` (CLx), `f`, `g`, `e` (EEX), `^` (yˣ),
-  `%`, `Ctrl+C` / `Ctrl+V` to copy / paste X, and `Esc` to close the menu.
+  the device; tablets and unfolded foldables print the legends, registers
+  and menu bigger, and ultra-wide windows keep the keys in proportion.
+  Nothing restarts on a fold, resize or display change. No touchscreen
+  required: a mouse or trackpad presses keys too.
+- **Hardware keyboard.** Digits, `.` (or `,`), `+ − * /` (`x` works too),
+  `Enter`, `Backspace` (backspace), `Delete` (CLx), `f`, `g`, `e` (EEX),
+  `^` (yˣ), `%`, `Ctrl+C` / `Ctrl+V` to copy / paste X, and `Esc` to close
+  the menu.
 - **TalkBack.** Every key reads in words ("y to the x, f bond price, g
   square root"), or just the shifted function while `f` or `g` is lit.
   The display announces each result and offers Copy X, Paste and
@@ -74,7 +85,8 @@ Full policy in [`AGENTS.md`](AGENTS.md).
 
 ## Install
 
-Grab `bf-12c.apk` from the [latest release](../../releases/latest) and
+bf-12c isn't publicly listed on Google Play yet. Until it is, grab
+`bf-12c.apk` from the [latest release](../../releases/latest) and
 sideload it. Every push to `main` publishes a single date-labeled release
 (`vYYYY.MM.DD.N`) and deletes the previous one. The release also includes
 `bf-12c.aab` and `mapping.txt` for Google Play. Verify the APK with the
@@ -87,6 +99,22 @@ Requires Android 13 or newer.
 ```sh
 ./gradlew lint test assembleDebug     # what CI runs (plus assembleRelease and bundleRelease)
 ```
+
+### Screenshots
+
+The README and Play screenshots are captures of the real app on an
+emulator (see "Visual checks" in [`AGENTS.md`](AGENTS.md)), taken by
+[`tools/screenshots/shoot.py`](tools/screenshots/shoot.py). It installs
+the debug build, sets an exact 9:16 screen at each class's density, types
+each scene on the calculator's own keys and writes the PNGs into
+`fastlane/metadata/android/en-US/images/` (and `docs/screenshots/`):
+
+```sh
+./gradlew assembleDebug
+tools/screenshots/shoot.py emulator-5554 phone   # also tab7, tab10
+```
+
+Nothing in the app or its tests depends on it.
 
 ## Tests
 
@@ -105,8 +133,9 @@ a tiny keystroke DSL (`"30 g n 6.5 g i 100000 PV 0 FV PMT"`, see
 - `FormatTest`, `ProgramParserTest` — display formatting, paste parsing,
   program-line merging, keycodes and mnemonics.
 - `InvariantsTest` — the project rules: no Android in the engine, no
-  permissions, no backups or device transfer, CI actions pinned to SHAs, compileSdk matching
-  targetSdk, and no `SDK_INT` checks.
+  permissions, touchscreen optional, no backups or device transfer, CI
+  actions pinned to SHAs, compileSdk matching targetSdk, and no `SDK_INT`
+  checks.
 
 GitHub Actions runs them on every pull request and push to `main`
 (`.github/workflows/ci.yml`, one check each for unit tests and lint, with a

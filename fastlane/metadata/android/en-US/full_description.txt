@@ -4,7 +4,7 @@ bf-12c is an RPN financial calculator inspired by the classic 12c financial calc
 
 THE STACK
 • Four levels, X Y Z T, plus LSTx. Stack lift follows the classic rules, and continuous memory keeps the stack, the registers, and the program across restarts.
-• Every register holds 34 significant digits. f EEX shows all of them, f 0 through f 9 sets fixed decimals, and f . sets scientific notation. When the display rounds, the full value is shown beneath it.
+• Every register holds 34 significant digits. f EEX shows all of them, f 0 through f 9 sets fixed decimals, and f . sets scientific notation. When the display rounds, portrait shows the full value beneath it.
 
 THE FINANCIAL KEYS
 • Time value of money: n, i, PV, PMT, FV, begin or end mode, and multiply or divide by 12.
@@ -24,11 +24,11 @@ ON THE GLASS
 • The ON key opens a system menu with four phosphors: P1 green, P3 amber, ice, and a classic LCD. Back closes it. Press a lit f or g again and that prefix cancels.
 
 EVERY SCREEN
-• Phones, tablets, foldables, and Chromebooks, in split screen or a resizable window. Tablets get bigger legends; the layout follows the window, not the device.
-• Type on a hardware keyboard: digits, + − * /, Enter, Backspace, Ctrl+C and Ctrl+V.
+• Phones, tablets, foldables, and Chromebooks, in split screen or a resizable window. The layout follows the window, not the device, and tablets print the legends, registers, and menu bigger.
+• No touchscreen needed: click the keys with a mouse or trackpad, or type on a hardware keyboard: digits, + − * /, Enter, Backspace, Delete, f, g, Ctrl+C and Ctrl+V.
 • TalkBack reads every key in words (y to the x, square root, roll down) and announces each result.
 
 NO NONSENSE
 bf-12c is free. No ads. No network. No tracking. No permissions, no analytics, and nothing is backed up off the device. Requires Android 13 or newer.
 
-bf-12c is an independent project and is not affiliated with or endorsed by HP Inc.
+bf-12c is an independent fan project, not affiliated with or endorsed by any calculator maker.
