@@ -501,6 +501,34 @@ class CalculatorTest {
         assertTrue(c.x.signum() != 0)
     }
 
+    @Test fun prefixSwapKeepsSolveOnNextFinancialKey() {
+        // f g and g f change the prefix, like f f cancels it: PMT still solves.
+        for (script in listOf("10 n 1 i 100 PV 0 FV f g g PMT", "10 n 1 i 100 PV 0 FV g f f PMT")) {
+            val c = run(script)
+            assertEquals(script, null, c.error)
+            assertNear("-10.5582", c.x)
+        }
+    }
+
+    @Test fun swipeBackspaceClearsTheSolveLikeGMinus() {
+        // Clearing X after a financial key, then PMT, stores 0 in PMT on every path.
+        val gMinus = run("10 n 5 i 1000 PV 0 PMT 2000 FV g - PMT")
+        val swipe = run("10 n 5 i 1000 PV 0 PMT 2000 FV").apply { backspace() }.keys("PMT")
+        for (c in listOf(gMinus, swipe)) {
+            assertEquals(null, c.error)
+            assertClose("0", c.x)
+            assertClose("0", c.fin[3])
+        }
+    }
+
+    @Test fun meanOverflowLeavesTheStackAlone() {
+        val c = run("1 EEX 99 CHS STO 1 9 EEX 9999 STO 2 7 ENTER 8 ENTER 9 g 0")
+        assertEquals(0, c.error)
+        assertClose("9", c.stack[0])
+        assertClose("8", c.stack[1])
+        assertClose("7", c.stack[2])
+    }
+
     @Test fun prefixCancelInProgramMode() {
         val c = run("f RS g")
         assertEquals(true, c.display().annunciators.g)

@@ -174,6 +174,9 @@ class Calculator {
             stepBuffer.clear()
             deleteLine()
         } else {
+            // The same function as g −: clearing X is not a financial key, so the
+            // next financial key stores instead of solving.
+            lastWasFin = false
             guarded { erase() }
         }
     }
@@ -320,7 +323,8 @@ class Calculator {
             mode = DisplayMode.Fix(d)
             return
         }
-        lastWasFin = false
+        // f g swaps the prefix; like f f, it keeps a pending financial solve.
+        if (key != Key.F && key != Key.G) lastWasFin = false
         when (key) {
             Key.DOT -> { finishEntry(); mode = DisplayMode.Sci((mode as? DisplayMode.Fix)?.digits?.coerceAtLeast(1) ?: 9) }
             Key.EEX -> { finishEntry(); mode = DisplayMode.All }
@@ -355,8 +359,9 @@ class Calculator {
     }
 
     private fun blue(key: Key) {
-        // Mode keys (BEG/END, D.MY/M.DY) don't break "solve on the next financial key".
-        if (key !in MODE_KEYS) lastWasFin = false
+        // Mode keys (BEG/END, D.MY/M.DY) and a prefix swap (g f) don't break
+        // "solve on the next financial key".
+        if (key !in MODE_KEYS && key != Key.F && key != Key.G) lastWasFin = false
         when (key) {
             Key.N -> { finishEntry(); x = x.multiply(TWELVE, WORK); fin[N] = x; liftEnabled = false; lastWasFin = true }
             Key.I -> { finishEntry(); x = x.divide(TWELVE, WORK); fin[I] = x; liftEnabled = false; lastWasFin = true }
@@ -774,8 +779,9 @@ class Calculator {
     private fun mean() {
         finishEntry()
         val n = count()
-        val mx = regs[2].divide(n, WORK)
-        val my = regs[4].divide(n, WORK)
+        // Both checked before either is pushed, so an error leaves the stack alone.
+        val mx = fit(regs[2].divide(n, WORK))
+        val my = fit(regs[4].divide(n, WORK))
         pushResult(my)
         pushResult(mx)
     }
@@ -787,8 +793,10 @@ class Calculator {
         val d = n.multiply(n.subtract(BigDecimal.ONE), WORK)
         val vx = n.multiply(regs[3], WORK).subtract(regs[2].multiply(regs[2], WORK), WORK).divide(d, WORK)
         val vy = n.multiply(regs[5], WORK).subtract(regs[4].multiply(regs[4], WORK), WORK).divide(d, WORK)
-        pushResult(BigMath.sqrt(vy.max(BigDecimal.ZERO)))
-        pushResult(BigMath.sqrt(vx.max(BigDecimal.ZERO)))
+        val sx = fit(BigMath.sqrt(vx.max(BigDecimal.ZERO)))
+        val sy = fit(BigMath.sqrt(vy.max(BigDecimal.ZERO)))
+        pushResult(sy)
+        pushResult(sx)
     }
 
     private fun weightedMean() {
