@@ -72,6 +72,16 @@ class FormatTest {
         }
     }
 
+    @Test fun clipboardRejectsDecimalCommas() {
+        // Dropping these commas would paste 15, 1.23456 or 1234.5: a different number.
+        for (text in listOf("1,5", "1.234,56", "1234,5", "12,34", "1,234,5", ",5", "1,234.5,6", "1 234,5")) {
+            assertNull(text, Format.parseClipboard(text))
+        }
+        for ((text, expected) in mapOf("1,234" to "1234", "-1,234,567.89" to "-1234567.89", "(1,000)" to "-1000", "$12,345.6" to "12345.6")) {
+            assertEquals(text, 0, BigDecimal(expected).compareTo(Format.parseClipboard(text)))
+        }
+    }
+
     @Test fun groupHandlesSignsAndFractions() {
         assertEquals("-12,345.678", Format.group("-12345.678"))
         assertEquals("100", Format.group("100"))

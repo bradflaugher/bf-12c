@@ -50,6 +50,9 @@ class Calculator {
     private var entry: Entry? = null
     private var prefix: Prefix = Prefix.None
     private var lastWasFin = false
+    /** [lastWasFin] and the entry from before STO, RCL or GTO, for a backspace that cancels them. */
+    private var finBeforePrefix = false
+    private var entryBeforePrefix: Entry? = null
     private val stepBuffer = mutableListOf<Key>()
 
     var error: Int? = null
@@ -169,9 +172,20 @@ class Calculator {
         }
         message = null
         weekday = null
-        prefix = Prefix.None
-        if (programMode) {
+        // A pending prefix or half-keyed program step is the last keystroke: erase
+        // only that, never X or a recorded line along with it.
+        if (prefix != Prefix.None || stepBuffer.isNotEmpty()) {
+            // Like f f, cancelling keeps a pending financial solve, and the number
+            // being typed carries on.
+            if (prefix is Prefix.Sto || prefix is Prefix.Rcl || prefix is Prefix.Gto) {
+                lastWasFin = finBeforePrefix
+                entry = entryBeforePrefix
+            }
+            prefix = Prefix.None
             stepBuffer.clear()
+            return
+        }
+        if (programMode) {
             deleteLine()
         } else {
             // The same function as g −: clearing X is not a financial key, so the
@@ -288,8 +302,8 @@ class Calculator {
                 stack[0] = stack[1]; stack[1] = t
                 liftEnabled = true
             }
-            Key.STO -> { finishEntry(); prefix = Prefix.Sto() }
-            Key.RCL -> { finishEntry(); prefix = Prefix.Rcl() }
+            Key.STO -> { holdForCancel(wasFin); prefix = Prefix.Sto() }
+            Key.RCL -> { holdForCancel(wasFin); prefix = Prefix.Rcl() }
             Key.F -> prefix = Prefix.F
             Key.G -> prefix = Prefix.G
             Key.N, Key.I, Key.PV, Key.PMT, Key.FV -> finKey(key, compute = wasFin && entry == null)
@@ -359,6 +373,7 @@ class Calculator {
     }
 
     private fun blue(key: Key) {
+        val wasFin = lastWasFin
         // Mode keys (BEG/END, D.MY/M.DY) and a prefix swap (g f) don't break
         // "solve on the next financial key".
         if (key !in MODE_KEYS && key != Key.F && key != Key.G) lastWasFin = false
@@ -390,7 +405,7 @@ class Calculator {
             Key.MUL -> unary { it.multiply(it, WORK) }
             Key.RS -> { finishEntry(); pauseRequested = running }
             Key.SST -> Unit // BST only means something in program mode
-            Key.RDN -> { finishEntry(); prefix = Prefix.Gto() }
+            Key.RDN -> { holdForCancel(wasFin); prefix = Prefix.Gto() }
             Key.SWAP -> { finishEntry(); if (running && stack[0] > stack[1]) skipLine() }
             Key.CLX -> { finishEntry(); if (running && stack[0].signum() != 0) skipLine() }
             Key.ENTER -> {
@@ -431,6 +446,13 @@ class Calculator {
 
     private fun finishEntry() {
         entry = null
+    }
+
+    /** Ends entry for STO, RCL or GTO, keeping what a backspace cancelling them restores. */
+    private fun holdForCancel(wasFin: Boolean) {
+        finBeforePrefix = wasFin
+        entryBeforePrefix = entry
+        finishEntry()
     }
 
     private fun erase() {
@@ -552,6 +574,8 @@ class Calculator {
 
     private fun gotoLine(key: Key, p: Prefix.Gto) {
         val d = key.digit
+        // GTO . nn is how program mode jumps; from the keyboard the dot is optional.
+        if (key == Key.DOT && p.digits.isEmpty()) return
         if (d == null) {
             prefix = Prefix.None
             if (key != Key.DOT) execute(key)

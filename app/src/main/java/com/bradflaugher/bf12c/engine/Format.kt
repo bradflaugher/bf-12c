@@ -92,13 +92,20 @@ object Format {
             t = t.substring(1, t.length - 1)
         }
         t = t.removeSuffix("%").removePrefix("+")
+        // Commas only as thousands separators: "1,5" or "1.234,56" is a decimal
+        // comma, and dropping it would paste a different number.
+        if (',' in t) {
+            if (!COMMA_GROUPED.matches(t)) return null
+            t = t.replace(",", "")
+        }
         if (!PASTE_NUMBER.matches(t)) return null
         val v = parse(t) ?: return null
         return if (negative) v.negate() else v
     }
 
-    private const val IGNORED_IN_PASTE = ",_'$€£¥₹"
+    private const val IGNORED_IN_PASTE = "_'$€£¥₹"
     private val PASTE_NUMBER = Regex("-?(\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d{1,9})?")
+    private val COMMA_GROUPED = Regex("-?\\d{1,3}(,\\d{3})+(\\.\\d*)?([eE][+-]?\\d{1,9})?")
 
     /** Adds thousands separators to the integer part of a plain decimal string. */
     fun group(plain: String): String {
