@@ -24,6 +24,10 @@ jobs:
     timeout-minutes: 30
     outputs:
       version: ${{ steps.version.outputs.version }}
+    # Secrets only ever reach builds of main (never PRs or a manual dispatch
+    # of another branch), so branch build logic can't read them.
+    env:
+      SIGNED: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
 
     steps:
       - name: Check out repository
@@ -58,7 +62,7 @@ jobs:
           validate-wrappers: true
 
       - name: Restore signing keystore
-        if: github.event_name != 'pull_request'
+        if: env.SIGNED == 'true'
         env:
           BF12C_KEYSTORE_BASE64: ${{ secrets.BF12C_KEYSTORE_BASE64 }}
           BF12C_STORE_PASSWORD: ${{ secrets.BF12C_STORE_PASSWORD }}
@@ -84,19 +88,20 @@ jobs:
           printf 'BF12C_KEYSTORE_PATH=%s\n' "$keystore_path" >> "$GITHUB_ENV"
 
       # Signing is all-or-nothing in app/build.gradle.kts. Pull requests get no
-      # signing variables at all and build a clean unsigned APK.
+      # signing variables at all and build a clean unsigned APK (so do manual
+      # runs of other branches).
       - name: Lint, test, and build release APK and bundle
         env:
-          BF12C_STORE_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.BF12C_STORE_PASSWORD || '' }}
-          BF12C_KEY_ALIAS: ${{ github.event_name != 'pull_request' && secrets.BF12C_KEY_ALIAS || '' }}
-          BF12C_KEY_PASSWORD: ${{ github.event_name != 'pull_request' && secrets.BF12C_KEY_PASSWORD || '' }}
+          BF12C_STORE_PASSWORD: ${{ env.SIGNED == 'true' && secrets.BF12C_STORE_PASSWORD || '' }}
+          BF12C_KEY_ALIAS: ${{ env.SIGNED == 'true' && secrets.BF12C_KEY_ALIAS || '' }}
+          BF12C_KEY_PASSWORD: ${{ env.SIGNED == 'true' && secrets.BF12C_KEY_PASSWORD || '' }}
         run: ./gradlew lint test assembleRelease bundleRelease
 
       # The APK is for sideloading; the bundle (.aab) is what Google Play takes,
       # and the R8 mapping deobfuscates Play crash reports. Pull requests upload
       # the unsigned APK only.
       - name: Name signed APK, bundle and mapping
-        if: github.event_name != 'pull_request'
+        if: env.SIGNED == 'true'
         run: |
           mkdir -p dist
           apk="$(ls app/build/outputs/apk/release/*.apk | head -1)"
@@ -105,7 +110,7 @@ jobs:
           cp app/build/outputs/mapping/release/mapping.txt dist/mapping.txt
 
       - name: Name APK
-        if: github.event_name == 'pull_request'
+        if: env.SIGNED != 'true'
         run: |
           apk="$(ls app/build/outputs/apk/release/*.apk | head -1)"
           mv "$apk" app/build/outputs/apk/release/bf-12c.apk
@@ -114,7 +119,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bf-12c-${{ steps.version.outputs.version }}
-          path: ${{ github.event_name != 'pull_request' && 'dist/' || 'app/build/outputs/apk/release/bf-12c.apk' }}
+          path: ${{ env.SIGNED == 'true' && 'dist/' || 'app/build/outputs/apk/release/bf-12c.apk' }}
           if-no-files-found: error
 
   release:
