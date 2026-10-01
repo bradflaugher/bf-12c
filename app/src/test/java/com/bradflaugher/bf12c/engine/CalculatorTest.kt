@@ -524,6 +524,20 @@ class CalculatorTest {
         assertClose("5", s.fin[3])
     }
 
+    @Test fun backspaceCancelResumesTheEntry() {
+        // 56 STO, backspace, 7 is 567, as if STO (or RCL, or GTO) was never pressed.
+        for (prefix in listOf("STO", "RCL", "g RDN", "STO .")) {
+            val c = run("1 ENTER 56 $prefix").apply { backspace() }.keys("7")
+            assertEquals(prefix, true, c.display().entering)
+            assertClose("567", c.x)
+            assertClose("1", c.stack[1])
+        }
+        // A finished number stays finished: 7 lifts it.
+        val done = run("56 ENTER STO").apply { backspace() }.keys("7")
+        assertClose("7", done.x)
+        assertClose("56", done.stack[1])
+    }
+
     @Test fun backspaceInProgramModeDropsAHalfKeyedStepOnly() {
         val c = run("f RS 1 + STO").apply { backspace() }
         assertEquals(2, c.program.size)

@@ -50,8 +50,9 @@ class Calculator {
     private var entry: Entry? = null
     private var prefix: Prefix = Prefix.None
     private var lastWasFin = false
-    /** [lastWasFin] from before STO, RCL or GTO, for a backspace that cancels them. */
+    /** [lastWasFin] and the entry from before STO, RCL or GTO, for a backspace that cancels them. */
     private var finBeforePrefix = false
+    private var entryBeforePrefix: Entry? = null
     private val stepBuffer = mutableListOf<Key>()
 
     var error: Int? = null
@@ -174,8 +175,12 @@ class Calculator {
         // A pending prefix or half-keyed program step is the last keystroke: erase
         // only that, never X or a recorded line along with it.
         if (prefix != Prefix.None || stepBuffer.isNotEmpty()) {
-            // Like f f, cancelling keeps a pending financial solve.
-            if (prefix is Prefix.Sto || prefix is Prefix.Rcl || prefix is Prefix.Gto) lastWasFin = finBeforePrefix
+            // Like f f, cancelling keeps a pending financial solve, and the number
+            // being typed carries on.
+            if (prefix is Prefix.Sto || prefix is Prefix.Rcl || prefix is Prefix.Gto) {
+                lastWasFin = finBeforePrefix
+                entry = entryBeforePrefix
+            }
             prefix = Prefix.None
             stepBuffer.clear()
             return
@@ -297,8 +302,8 @@ class Calculator {
                 stack[0] = stack[1]; stack[1] = t
                 liftEnabled = true
             }
-            Key.STO -> { finishEntry(); finBeforePrefix = wasFin; prefix = Prefix.Sto() }
-            Key.RCL -> { finishEntry(); finBeforePrefix = wasFin; prefix = Prefix.Rcl() }
+            Key.STO -> { holdForCancel(wasFin); prefix = Prefix.Sto() }
+            Key.RCL -> { holdForCancel(wasFin); prefix = Prefix.Rcl() }
             Key.F -> prefix = Prefix.F
             Key.G -> prefix = Prefix.G
             Key.N, Key.I, Key.PV, Key.PMT, Key.FV -> finKey(key, compute = wasFin && entry == null)
@@ -400,7 +405,7 @@ class Calculator {
             Key.MUL -> unary { it.multiply(it, WORK) }
             Key.RS -> { finishEntry(); pauseRequested = running }
             Key.SST -> Unit // BST only means something in program mode
-            Key.RDN -> { finishEntry(); finBeforePrefix = wasFin; prefix = Prefix.Gto() }
+            Key.RDN -> { holdForCancel(wasFin); prefix = Prefix.Gto() }
             Key.SWAP -> { finishEntry(); if (running && stack[0] > stack[1]) skipLine() }
             Key.CLX -> { finishEntry(); if (running && stack[0].signum() != 0) skipLine() }
             Key.ENTER -> {
@@ -441,6 +446,13 @@ class Calculator {
 
     private fun finishEntry() {
         entry = null
+    }
+
+    /** Ends entry for STO, RCL or GTO, keeping what a backspace cancelling them restores. */
+    private fun holdForCancel(wasFin: Boolean) {
+        finBeforePrefix = wasFin
+        entryBeforePrefix = entry
+        finishEntry()
     }
 
     private fun erase() {
