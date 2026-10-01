@@ -494,6 +494,44 @@ class CalculatorTest {
         assertClose("7", run("3 ENTER 4 g g +").x)
     }
 
+    @Test fun backspaceCancelsAPendingPrefixOnly() {
+        // An accidental f, then a swipe: the f goes, X stays.
+        val f = run("1234 ENTER f").apply { backspace() }
+        assertEquals(false, f.display().annunciators.f)
+        assertClose("1234", f.x)
+        f.keys("2") // a digit again, not FIX 2
+        assertClose("2", f.x)
+        assertEquals(DisplayMode.All, f.mode)
+        val sto = run("12 STO").apply { backspace() }
+        assertEquals(null, sto.display().annunciators.pending)
+        assertClose("12", sto.x)
+        // Mid-entry, the prefix is the last keystroke, not the digit before it.
+        val typing = run("56 g").apply { backspace() }
+        assertEquals(false, typing.display().annunciators.g)
+        assertEquals(true, typing.display().entering)
+        assertClose("56", typing.x)
+    }
+
+    @Test fun backspaceInProgramModeDropsAHalfKeyedStepOnly() {
+        val c = run("f RS 1 + STO").apply { backspace() }
+        assertEquals(2, c.program.size)
+        assertEquals(2, c.pc)
+        c.keys("2")
+        assertEquals(3, c.program.size)
+        // With nothing pending it still deletes the current line.
+        c.backspace()
+        assertEquals(2, c.program.size)
+    }
+
+    @Test fun keyboardGotoAcceptsTheDot() {
+        // g GTO . 03 from the keyboard, as in program mode: the 03 is a line, not a number.
+        val c = run("f RS 1 + 2 * f RS 5 g RDN . 0 3")
+        assertClose("5", c.x)
+        assertEquals(null, c.display().annunciators.pending)
+        c.runProgram()
+        assertClose("10", c.x)
+    }
+
     @Test fun prefixCancelKeepsSolveOnNextFinancialKey() {
         // n i PV PMT stored; FV then f f then PMT still solves PMT.
         val c = run("10 n 1 i 100 PV 0 FV f f PMT")

@@ -47,13 +47,16 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   depreciation, bond PRICE / YTM, DATE / ΔDYS (D.MY and M.DY), statistics
   (Σ+, Σ−, x̄, s, x̄w, x̂,r, ŷ,r), %, Δ%, %T, yˣ, √x, eˣ, LN, n!, FRAC, INTG,
   RND, 20 storage registers with STO arithmetic.
-- **Keystroke programming:** `f P/R`, 99 merged-keycode lines, `GTO`,
+- **Keystroke programming:** `f P/R`, 99 merged-keycode lines, `GTO`
+  (`GTO nn` or `GTO . nn` from the keyboard),
   `x≤y`, `x=0`, `R/S`, `PSE`, `SST` / `BST`. The listing shows the 12c
   keycodes *and* a readable mnemonic.
-- **Modern touches:** swipe the display left to backspace (or `g −`),
-  long-press to copy X, double-tap to paste. Paste understands numbers the
+- **Modern touches:** swipe the display left to backspace (or `g −`);
+  with `f`, `g`, `STO`, `RCL` or `GTO` pending, backspace cancels just that
+  prefix. Long-press to copy X, double-tap to paste. Paste understands numbers the
   way people copy them: `1,234.50`, `$1,000`, `(250.00)` (negative), `−3.5`,
-  `12%`, `6.02e23`. A pasted value behaves like a recall, so `PV` after a
+  `12%`, `6.02e23`; a decimal comma like `1,5` is refused rather than
+  misread. A pasted value behaves like a recall, so `PV` after a
   paste stores it. The `ON` key opens a system menu with four phosphors:
   P1 green, P3 amber, ice, and a classic 12c LCD; back closes it.
   Pressing a lit `f` or `g` again cancels it (the lit key is ringed).

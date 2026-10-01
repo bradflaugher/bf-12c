@@ -169,9 +169,14 @@ class Calculator {
         }
         message = null
         weekday = null
-        prefix = Prefix.None
-        if (programMode) {
+        // A pending prefix or half-keyed program step is the last keystroke: erase
+        // only that, never X or a recorded line along with it.
+        if (prefix != Prefix.None || stepBuffer.isNotEmpty()) {
+            prefix = Prefix.None
             stepBuffer.clear()
+            return
+        }
+        if (programMode) {
             deleteLine()
         } else {
             // The same function as g −: clearing X is not a financial key, so the
@@ -552,6 +557,8 @@ class Calculator {
 
     private fun gotoLine(key: Key, p: Prefix.Gto) {
         val d = key.digit
+        // GTO . nn is how program mode jumps; from the keyboard the dot is optional.
+        if (key == Key.DOT && p.digits.isEmpty()) return
         if (d == null) {
             prefix = Prefix.None
             if (key != Key.DOT) execute(key)
