@@ -512,6 +512,18 @@ class CalculatorTest {
         assertClose("56", typing.x)
     }
 
+    @Test fun backspaceCancelKeepsSolveOnNextFinancialKey() {
+        // FV, then STO (or RCL, or GTO) cancelled by backspace: PMT still solves, like f f.
+        for (prefix in listOf("STO", "RCL", "g RDN")) {
+            val c = run("10 n 1 i 100 PV 0 FV $prefix").apply { backspace() }.keys("PMT")
+            assertEquals(prefix, null, c.error)
+            assertNear("-10.5582", c.x)
+        }
+        // Without a financial key before it, PMT still stores.
+        val s = run("10 n 1 i 100 PV 0 FV 5 STO").apply { backspace() }.keys("PMT")
+        assertClose("5", s.fin[3])
+    }
+
     @Test fun backspaceInProgramModeDropsAHalfKeyedStepOnly() {
         val c = run("f RS 1 + STO").apply { backspace() }
         assertEquals(2, c.program.size)

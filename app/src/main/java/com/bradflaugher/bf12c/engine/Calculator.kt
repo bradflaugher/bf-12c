@@ -50,6 +50,8 @@ class Calculator {
     private var entry: Entry? = null
     private var prefix: Prefix = Prefix.None
     private var lastWasFin = false
+    /** [lastWasFin] from before STO, RCL or GTO, for a backspace that cancels them. */
+    private var finBeforePrefix = false
     private val stepBuffer = mutableListOf<Key>()
 
     var error: Int? = null
@@ -172,6 +174,8 @@ class Calculator {
         // A pending prefix or half-keyed program step is the last keystroke: erase
         // only that, never X or a recorded line along with it.
         if (prefix != Prefix.None || stepBuffer.isNotEmpty()) {
+            // Like f f, cancelling keeps a pending financial solve.
+            if (prefix is Prefix.Sto || prefix is Prefix.Rcl || prefix is Prefix.Gto) lastWasFin = finBeforePrefix
             prefix = Prefix.None
             stepBuffer.clear()
             return
@@ -293,8 +297,8 @@ class Calculator {
                 stack[0] = stack[1]; stack[1] = t
                 liftEnabled = true
             }
-            Key.STO -> { finishEntry(); prefix = Prefix.Sto() }
-            Key.RCL -> { finishEntry(); prefix = Prefix.Rcl() }
+            Key.STO -> { finishEntry(); finBeforePrefix = wasFin; prefix = Prefix.Sto() }
+            Key.RCL -> { finishEntry(); finBeforePrefix = wasFin; prefix = Prefix.Rcl() }
             Key.F -> prefix = Prefix.F
             Key.G -> prefix = Prefix.G
             Key.N, Key.I, Key.PV, Key.PMT, Key.FV -> finKey(key, compute = wasFin && entry == null)
@@ -364,6 +368,7 @@ class Calculator {
     }
 
     private fun blue(key: Key) {
+        val wasFin = lastWasFin
         // Mode keys (BEG/END, D.MY/M.DY) and a prefix swap (g f) don't break
         // "solve on the next financial key".
         if (key !in MODE_KEYS && key != Key.F && key != Key.G) lastWasFin = false
@@ -395,7 +400,7 @@ class Calculator {
             Key.MUL -> unary { it.multiply(it, WORK) }
             Key.RS -> { finishEntry(); pauseRequested = running }
             Key.SST -> Unit // BST only means something in program mode
-            Key.RDN -> { finishEntry(); prefix = Prefix.Gto() }
+            Key.RDN -> { finishEntry(); finBeforePrefix = wasFin; prefix = Prefix.Gto() }
             Key.SWAP -> { finishEntry(); if (running && stack[0] > stack[1]) skipLine() }
             Key.CLX -> { finishEntry(); if (running && stack[0].signum() != 0) skipLine() }
             Key.ENTER -> {
