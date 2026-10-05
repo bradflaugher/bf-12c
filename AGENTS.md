@@ -48,10 +48,15 @@ repository's security settings.
     mnemonics.
   - `Format.kt` — FIX / SCI / ALL display formatting.
 - `CalcViewModel.kt` — owns the engine on a single background thread,
-  runs programs, persists to SharedPreferences.
+  runs programs, persists to SharedPreferences (also the menu and
+  first-run tips state).
+- `Links.kt` — Share app, Send feedback and the privacy policy: intents to
+  the share sheet and browser, never a network call. A missing handler
+  returns false instead of crashing.
 - `ui/` — Compose: `Keyboard.kt` (landscape 4×10 and portrait folded
   layouts), `DisplayPanel.kt` (CRT display), `CalculatorScreen.kt`
-  (screen, brand plate, ON-key system menu), `FitText.kt` (deterministic
+  (screen, brand plate, hardware keys), `SystemMenu.kt` (the ON-key
+  system menu, the manual and FAQ, the first-run tips), `FitText.kt` (deterministic
   one-line text sizing; use it instead of `TextAutoSize`), `Theme.kt`.
 - `app/src/test/` — JVM unit tests. `engine/Keystrokes.kt` is the shared
   keystroke DSL; `HandbookTest` (owner's-handbook examples),
@@ -61,7 +66,9 @@ repository's security settings.
 - `tools/icon/gen_icon.py` — generates the adaptive launcher icon
   (`res/drawable/ic_launcher_*.xml`). Edit the script, not the XML.
 - `tools/screenshots/shoot.py` — captures the Play and README screenshots
-  from the real app on an emulator (see Visual checks).
+  from the real app on an emulator (see Visual checks);
+  `tools/screenshots/caption.py` adds the Play captions and builds the
+  feature graphic.
 
 ## Behavioral rules
 
@@ -77,6 +84,12 @@ repository's security settings.
   (scripts are typed with the tiny keystroke DSL in `Keystrokes.kt`).
 - Every stored result is rounded and range-checked (`fit`) before any
   register is written, so an error never leaves the stack half-updated.
+- No rating prompts, review APIs or "please share" nags, and no email
+  addresses in the app: feedback goes to GitHub issues. `InvariantsTest`
+  checks this.
+- The first-run tips must never block: one tap, Back, Esc or any key
+  dismisses them. Launching with the boolean extra
+  `com.bradflaugher.bf12c.SKIP_TIPS` skips them (screenshots use it).
 - No keystroke may stall the engine: loops over user-sized counts are capped
   (AMORT, DB) or replaced by closed forms (SOYD). The fuzzer checks this.
 
@@ -124,4 +137,6 @@ unzip `emulator-linux_x64-*.zip` into `.emu/sdk/` and the
 The store and README screenshots come from `tools/screenshots/shoot.py
 SERIAL phone|tab7|tab10` on such an emulator (after `./gradlew
 assembleDebug`); rerun all three after a visible UI change and look at
-every PNG it writes. Use an AVD without a display cutout.
+every PNG it writes (the captioned ones in `fastlane/` and the raw ones in
+`docs/screenshots/`). Use an AVD without a display cutout; a
+landscape-first tablet AVD works too.

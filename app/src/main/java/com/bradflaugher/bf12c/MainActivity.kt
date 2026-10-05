@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -11,11 +12,15 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.bradflaugher.bf12c.ui.CalculatorScreen
 
 class MainActivity : ComponentActivity() {
+    private val vm: CalcViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         applySystemBars(resources.configuration)
-        setContent { CalculatorScreen() }
+        // tools/screenshots/shoot.py starts every scene this way.
+        if (intent.getBooleanExtra(EXTRA_SKIP_TIPS, false)) vm.skipTips()
+        setContent { CalculatorScreen(vm) }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -48,5 +53,10 @@ class MainActivity : ComponentActivity() {
         }
         controller.isAppearanceLightStatusBars = false
         controller.isAppearanceLightNavigationBars = false
+    }
+
+    companion object {
+        /** `am start --ez com.bradflaugher.bf12c.SKIP_TIPS true`: open without the first-run tips. */
+        const val EXTRA_SKIP_TIPS = "com.bradflaugher.bf12c.SKIP_TIPS"
     }
 }

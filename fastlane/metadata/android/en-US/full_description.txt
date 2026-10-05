@@ -1,34 +1,44 @@
-Thirty-four digits, four stack levels, and the keys under your thumbs.
+An RPN financial calculator with the classic 12c keyboard, 34 significant digits, and a green-screen display. Loans, mortgages, NPV, IRR, amortization, bonds, depreciation, dates, statistics and keystroke programs, the way the 12c does them.
 
-bf-12c is an RPN financial calculator inspired by the classic 12c financial calculator. Landscape is the 4 by 10 keyboard: gold f legends above, blue g legends below, and the tall ENTER key. Portrait folds that keyboard in half, financial keys on top and the number pad where your thumbs are.
+Landscape is the full 4 by 10 keyboard: gold f legends above, blue g legends below, and the tall ENTER key. Portrait folds that keyboard in half, financial keys on top and the number pad where your thumbs are.
+
+TIME VALUE OF MONEY
+• n, i, PV, PMT and FV: solve for any one of them. Loan and mortgage payments, savings goals, lease rates, interest rates.
+• Begin or end mode, and multiply or divide by 12 for monthly periods.
+• Amortization schedules and simple interest.
+
+CASH FLOWS, BONDS, DEPRECIATION
+• Net present value and internal rate of return, with CF0, CFj, and Nj for up to 20 cash flow groups.
+• Bond price and yield to maturity.
+• Straight-line, sum-of-the-years-digits, and declining-balance depreciation.
+• Dates and the days between them, in day-month-year or month-day-year.
 
 THE STACK
-• Four levels, X Y Z T, plus LSTx. Stack lift follows the classic rules, and continuous memory keeps the stack, the registers, and the program across restarts.
-• Every register holds 34 significant digits. f EEX shows all of them, f 0 through f 9 sets fixed decimals, and f . sets scientific notation. When the display rounds, portrait shows the full value beneath it.
+• Real RPN with four levels, X Y Z T, plus LSTx. Stack lift follows the classic rules.
+• Every register holds 34 significant digits, not floating point. f EEX shows all of them, f 0 to f 9 sets fixed decimals, f . sets scientific notation.
+• Continuous memory: the stack, the registers and your program survive restarts.
 
-THE FINANCIAL KEYS
-• Time value of money: n, i, PV, PMT, FV, begin or end mode, and multiply or divide by 12.
-• Cash flows with NPV and IRR, including CF0, CFj, and Nj, plus amortization and simple interest.
-• Straight-line, sum-of-the-years-digits, and declining-balance depreciation. Bond price and yield.
-• Dates and the days between them, in day-month-year or month-day-year.
-• Percent, percent change, and percent of total. Means, standard deviation, weighted mean, linear estimate, and correlation.
-• Twenty storage registers, with storage arithmetic. y to the x, square root, e to the x, natural log, factorial, fraction, integer, and round.
+MATH AND STATISTICS
+• Percent, percent change, and percent of total. Mean, standard deviation, weighted mean, linear estimate, and correlation.
+• Twenty storage registers with storage arithmetic. y to the x, square root, e to the x, natural log, factorial, fraction, integer, round.
 
 PROGRAMS
 • f P/R opens program mode: 99 merged lines, GTO, x<=y, x=0, R/S, pause, and single-step in both directions.
 • The listing shows the classic keycodes and a readable mnemonic beside them.
 
 ON THE GLASS
-• Swipe the display left to backspace, or press g minus. In program mode that deletes the line. Long-press copies X. Double-tap pastes.
-• Paste understands numbers the way people copy them: 1,234.50, a leading dollar sign, parentheses for a negative, a trailing percent, or scientific notation. A pasted value behaves like a recall, so PV after a paste stores it.
-• The ON key opens a system menu with four phosphors: P1 green, P3 amber, ice, and a classic LCD. Back closes it. Press a lit f or g again and that prefix cancels.
+• Swipe the display left to backspace. Long-press copies X. Double-tap pastes, and paste understands 1,234.50, $1,000, (250.00) and 6.02e23.
+• Four phosphor themes: P1 green, P3 amber, ice, and a classic 12c LCD.
+• The ON key opens the system menu: themes, haptics, a built-in manual and FAQ, first-run tips, sharing, and a link to report a bug or ask for a feature.
 
 EVERY SCREEN
-• Phones, tablets, foldables, and Chromebooks, in split screen or a resizable window. The layout follows the window, not the device, and tablets print the legends, registers, and menu bigger.
-• No touchscreen needed: click the keys with a mouse or trackpad, or type on a hardware keyboard: digits, + − * /, Enter, Backspace, Delete, f, g, Ctrl+C and Ctrl+V.
-• TalkBack reads every key in words (y to the x, square root, roll down) and announces each result.
+• Phones, tablets, foldables and Chromebooks, in split screen or a resizable window. The layout follows the window, and tablets print everything bigger.
+• No touchscreen needed: click with a mouse or trackpad, or type on a hardware keyboard (digits, + − * /, Enter, Backspace, F1 for the menu).
+• TalkBack reads every key in words and announces each result.
 
 NO NONSENSE
-bf-12c is free. No ads. No network. No tracking. No permissions, no analytics, and nothing is backed up off the device. Requires Android 13 or newer.
+Free. No ads. No network access. No tracking, no analytics, no permissions, and nothing is backed up off the device. Requires Android 13 or newer.
 
 bf-12c is an independent fan project, not affiliated with or endorsed by any calculator maker.
+
+If you learned finance on a 12c, or you're learning it now, this one is for you. Install it and press ON.
