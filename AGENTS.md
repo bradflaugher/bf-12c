@@ -56,7 +56,7 @@ repository's security settings.
   returns false instead of crashing.
 - `ui/` — Compose: `Keyboard.kt` (landscape 4×10 and portrait folded
   layouts), `DisplayPanel.kt` (CRT display), `CalculatorScreen.kt`
-  (screen, brand plate, hardware keys), `SystemMenu.kt` (the ON-key
+  (screen, brand plate, hardware keys), `SystemMenu.kt` (the MENU-key
   system menu, the manual and FAQ, the first-run tips), `FitText.kt` (deterministic
   one-line text sizing; use it instead of `TextAutoSize`), `Theme.kt`.
 - `app/src/test/` — JVM unit tests. `engine/Keystrokes.kt` is the shared
@@ -77,7 +77,8 @@ repository's security settings.
   extension. Current extensions: 34 digits, `f EEX` = ALL display mode,
   `g −` = backspace (display swipe too; deletes the line in program mode),
   copy/paste, phosphor themes, 99 program lines, 20 cash flows, `f f` /
-  `g g` cancels the prefix.
+  `g g` cancels the prefix, and the ON key reads MENU (same place, keycode
+  41) because it opens the system menu: an app has no power switch.
 - Financial keys store when a number was just keyed or computed, and solve
   when pressed right after another financial key — the 12c rule.
 - Keep the engine pure: all Android code lives outside `engine/`.
@@ -85,7 +86,7 @@ repository's security settings.
   (scripts are typed with the tiny keystroke DSL in `Keystrokes.kt`).
 - Every stored result is rounded and range-checked (`fit`) before any
   register is written, so an error never leaves the stack half-updated.
-- Rating is a passive menu item (ON › RATE ON GOOGLE PLAY opens the Play
+- Rating is a passive menu item (MENU › RATE ON GOOGLE PLAY opens the Play
   listing), never a prompt, reminder or the in-app review API. No "please
   share" nags, and no email addresses in the app: feedback goes to GitHub
   issues. `InvariantsTest` checks this.

@@ -68,7 +68,7 @@ import com.bradflaugher.bf12c.sendFeedback
 import com.bradflaugher.bf12c.shareApp
 import kotlinx.coroutines.delay
 
-/** The ON key opens a green-screen system menu. */
+/** The MENU key (the 12c's ON, keycode 41) opens a green-screen system menu. */
 @Composable
 fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Unit) {
     var help by rememberSaveable { mutableStateOf(false) }
@@ -189,7 +189,7 @@ private val TIPS = listOf(
     "HOLD" to "Long-press the display to copy X.",
     "TAP TAP" to "Double-tap the display to paste.",
     "f · g" to "Light the gold or blue legends. Again cancels.",
-    "ON" to "The menu: phosphors, manual, these tips, feedback.",
+    "MENU" to "The menu: phosphors, manual, these tips, feedback.",
     "KEYBOARD" to "Type digits, + − * /, Enter. F1 menu, Esc closes.",
 )
 
@@ -438,8 +438,8 @@ private val MANUAL: List<Pair<String, List<Pair<String, String>>>> = listOf(
         "PMT negative?" to "Money out is negative, money in positive: the 12c's cash-flow sign rule.",
         "Rotate?" to "Landscape is the full 4x10 keyboard; portrait folds it and shows T Z Y.",
         "Privacy?" to "No permissions, no network, no ads, no tracking. Nothing leaves the phone.",
-        "A bug?" to "ON > SEND FEEDBACK opens a GitHub issue with the version filled in.",
-        "Like it?" to "ON > RATE ON GOOGLE PLAY opens the listing. It will never ask you.",
+        "A bug?" to "MENU > SEND FEEDBACK opens a GitHub issue with the version filled in.",
+        "Like it?" to "MENU > RATE ON GOOGLE PLAY opens the listing. It will never ask you.",
         "Is it HP?" to "No: an independent homage, not affiliated with HP.",
     ),
 )

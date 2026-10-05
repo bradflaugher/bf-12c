@@ -37,7 +37,7 @@ object ProgramParser {
             Key.STO -> register(rest, allowOps = true)
             Key.RCL -> register(rest, allowOps = false)
             Key.SST -> Outcome.Immediate(Action.SST)
-            Key.ON -> Outcome.Immediate(Action.NONE)
+            Key.MENU -> Outcome.Immediate(Action.NONE)
             else -> Outcome.Complete
         }
     }

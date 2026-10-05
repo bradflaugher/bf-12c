@@ -55,7 +55,7 @@ TOKENS = {
     "/": "divide", "yx": "y to the x", "1/x": "reciprocal", "%T": "percent of total",
     "D%": "percent change", "%": "percent", "EEX": "enter exponent", "*": "times",
     "RS": "run stop", "SST": "single step", "RDN": "roll down", "SWAP": "x exchange y",
-    "CLX": "clear x", "ENTER": "enter", "-": "minus", "ON": "menu", "f": "f", "g": "g",
+    "CLX": "clear x", "ENTER": "enter", "-": "minus", "MENU": "menu", "f": "f", "g": "g",
     "STO": "store", "RCL": "recall", ".": "decimal point", "S+": "sigma plus", "+": "plus",
 }
 
@@ -133,7 +133,7 @@ class Device:
         # The boot banner types itself out first.
         time.sleep(1.5)
         if phosphor:
-            self.type("ON")
+            self.type("MENU")
             self.tap_text(r"\[?" + re.escape(phosphor) + r"\]?")
             self.tap_text(r"EXIT")
             self.map_keys()
@@ -240,7 +240,7 @@ def phone(d, out):
     d.shot(out / "amber.png")
 
     d.fresh(landscape=False)
-    d.type(MORTGAGE + " ON")
+    d.type(MORTGAGE + " MENU")
     d.shot(out / "menu.png")
 
     d.fresh(landscape=True, phosphor="12C LCD")
@@ -270,7 +270,7 @@ def tablet(d, out):
     d.shot(out / "program.png")
 
     d.fresh(landscape=False)
-    d.type(DAYS + " ON")
+    d.type(DAYS + " MENU")
     d.shot(out / "menu.png")
 
     d.fresh(landscape=True, phosphor="12C LCD")

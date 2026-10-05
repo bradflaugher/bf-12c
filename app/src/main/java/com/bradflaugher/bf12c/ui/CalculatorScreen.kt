@@ -152,7 +152,7 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
             return@handler true
         }
         when (e.key) {
-            // The ON key's menu, for a keyboard with no touch or mouse.
+            // The MENU key's menu, for a keyboard with no touch or mouse.
             KeyCode.F1, KeyCode.Menu -> vm.toggleMenu()
             KeyCode.Escape -> if (vm.menuOpen) vm.closeMenu() else return@handler false
             // The menu has its own buttons; only Esc and F1 reach past it.

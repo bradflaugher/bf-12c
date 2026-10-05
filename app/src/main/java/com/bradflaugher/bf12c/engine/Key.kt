@@ -39,7 +39,8 @@ enum class Key(val code: Int, val label: String, val f: String? = null, val g: S
     D3(3, "3", null, "n!"),
     SUB(30, "−", null, "←"),
 
-    ON(41, "ON"),
+    // The 12c's ON key: an app has no power switch, so it opens the menu.
+    MENU(41, "MENU"),
     F(42, "f"),
     G(43, "g"),
     STO(44, "STO"),
@@ -76,7 +77,7 @@ enum class Key(val code: Int, val label: String, val f: String? = null, val g: S
             "x≷y" to "x exchange y", "FIN" to "clear financial", "x≤y" to "x less than or equal to y",
             "CLx" to "clear x", "REG" to "clear registers", "x=0" to "x equals 0", "ENTER" to "enter",
             "PREFIX" to "clear prefix", "LSTx" to "last x", "x̂,r" to "x estimate", "ŷ,r" to "y estimate",
-            "n!" to "factorial", "−" to "minus", "←" to "backspace", "ON" to "menu", "STO" to "store",
+            "n!" to "factorial", "−" to "minus", "←" to "backspace", "MENU" to "menu", "STO" to "store",
             "RCL" to "recall", "x̄" to "mean", "." to "decimal point", "SCI" to "scientific",
             "s" to "standard deviation", "Σ+" to "sigma plus", "Σ−" to "sigma minus", "+" to "plus",
             "AMORT" to "amortize", "INT" to "simple interest", "RND" to "round", "SL" to "straight line",
@@ -110,7 +111,7 @@ enum class Key(val code: Int, val label: String, val f: String? = null, val g: S
             listOf(N, I, PV, PMT, FV, CHS, D7, D8, D9, DIV),
             listOf(YX, RECIP, PCT_T, DELTA_PCT, PCT, EEX, D4, D5, D6, MUL),
             listOf(RS, SST, RDN, SWAP, CLX, ENTER, D1, D2, D3, SUB),
-            listOf(ON, F, G, STO, RCL, ENTER, D0, DOT, SIGMA_PLUS, ADD),
+            listOf(MENU, F, G, STO, RCL, ENTER, D0, DOT, SIGMA_PLUS, ADD),
         )
 
         /** The gold "CLEAR" bracket spans these keys' f legends. */
