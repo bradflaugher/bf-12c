@@ -63,6 +63,7 @@ import com.bradflaugher.bf12c.CalcViewModel
 import com.bradflaugher.bf12c.Links
 import com.bradflaugher.bf12c.appVersion
 import com.bradflaugher.bf12c.openWeb
+import com.bradflaugher.bf12c.rateApp
 import com.bradflaugher.bf12c.sendFeedback
 import com.bradflaugher.bf12c.shareApp
 import kotlinx.coroutines.delay
@@ -146,6 +147,8 @@ fun SystemMenu(vm: CalcViewModel, onCopy: () -> Unit, onPaste: () -> Unit) {
         MenuItem("SEND FEEDBACK", null, style) { if (!context.sendFeedback()) notice = "NO BROWSER FOUND" }
         Section("ABOUT", style)
         MenuItem("SHARE APP", null, style) { if (!context.shareApp()) notice = "NOTHING CAN SHARE" }
+        // Only ever here, when asked for: no prompts, no reminders.
+        MenuItem("RATE ON GOOGLE PLAY", null, style) { if (!context.rateApp()) notice = "NO STORE OR BROWSER" }
         MenuItem("PRIVACY POLICY", null, style) { if (!context.openWeb(Links.PRIVACY_POLICY_URL)) notice = "NO BROWSER FOUND" }
         BasicText("VERSION $version", style = style.section, maxLines = 1, modifier = Modifier.padding(top = 10.dp))
     }
@@ -209,7 +212,9 @@ private fun CrtOverlay(
 ) {
     val ink = if (phosphor.glow) phosphor.ink else Color(0xFFB9C4A3)
     val glow = if (phosphor.glow) Shadow(phosphor.ink.copy(alpha = 0.8f), blurRadius = 14f) else null
-    BoxWithConstraints(
+    // The scrim is a sibling behind the panel, not its parent: a clickable parent would
+    // merge the whole panel into one "dismiss" node for TalkBack.
+    Box(
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.82f))
@@ -217,7 +222,11 @@ private fun CrtOverlay(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClickLabel = dismissLabel,
-            ) { onDismiss() }
+            ) { onDismiss() },
+    )
+    BoxWithConstraints(
+        Modifier
+            .fillMaxSize()
             .safeDrawingPadding(),
         contentAlignment = Alignment.Center,
     ) {
@@ -423,6 +432,7 @@ private val MANUAL: List<Pair<String, List<Pair<String, String>>>> = listOf(
         "Rotate?" to "Landscape is the full 4x10 keyboard; portrait folds it and shows T Z Y.",
         "Privacy?" to "No permissions, no network, no ads, no tracking. Nothing leaves the phone.",
         "A bug?" to "ON > SEND FEEDBACK opens a GitHub issue with the version filled in.",
+        "Like it?" to "ON > RATE ON GOOGLE PLAY opens the listing. It will never ask you.",
         "Is it HP?" to "No: an independent homage, not affiliated with HP.",
     ),
 )

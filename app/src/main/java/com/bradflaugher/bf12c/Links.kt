@@ -16,6 +16,9 @@ object Links {
     /** The release application ID, not the debug build's, so a shared link always works. */
     const val APPLICATION_ID = "com.bradflaugher.bf12c"
     const val PLAY_URL = "https://play.google.com/store/apps/details?id=$APPLICATION_ID"
+    /** The Play Store app's own link to the listing, where the rating stars are. */
+    const val MARKET_URL = "market://details?id=$APPLICATION_ID"
+    const val PLAY_STORE_PACKAGE = "com.android.vending"
     const val ISSUES_URL = "https://github.com/bradflaugher/bf-12c/issues/new"
     const val PRIVACY_POLICY_URL = "https://bradflaugher.com/privacy/bf-12c/"
 
@@ -47,7 +50,20 @@ fun Context.shareApp(): Boolean {
         .setType("text/plain")
         .putExtra(Intent.EXTRA_SUBJECT, "bf-12c RPN Calculator")
         .putExtra(Intent.EXTRA_TEXT, Links.SHARE_TEXT)
+    // The chooser itself always resolves, even with nothing to share to (some TVs and
+    // kiosks), so ask about the send first. The manifest's <queries> makes the targets visible.
+    if (packageManager.queryIntentActivities(send, 0).isEmpty()) return false
     return start(Intent.createChooser(send, "Share bf-12c"))
+}
+
+/**
+ * Opens bf-12c's Google Play listing so the user can rate it: the Play Store app if it's
+ * there, otherwise any app for market:// links, otherwise the web listing. A plain link,
+ * only ever opened from the menu: no review API, no prompt, no timing.
+ */
+fun Context.rateApp(): Boolean {
+    val market = Intent(Intent.ACTION_VIEW, Links.MARKET_URL.toUri())
+    return start(Intent(market).setPackage(Links.PLAY_STORE_PACKAGE)) || start(market) || openWeb(Links.PLAY_URL)
 }
 
 /** Opens a new GitHub issue in the browser. False if there is no browser (some TVs and kiosks). */

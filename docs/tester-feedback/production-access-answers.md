@@ -4,7 +4,9 @@ Draft answers for Google Play's production-access questionnaire, based on
 the tester's template ([`com.bradflaugher.bf12c_production.pdf`](com.bradflaugher.bf12c_production.pdf))
 but rewritten to match what actually changed. Brad: check every
 **[BRAD: ...]** spot before pasting. Note that the template says a "Rate Your
-App" option was added. It wasn't, so these answers don't say so.
+App" option was added. A **Rate on Google Play** button was added to the
+menu, but there's no rating prompt or reminder, by design, and the answers
+say exactly that.
 
 ---
 
@@ -38,8 +40,8 @@ of the test. It found no crashes or bugs. The suggestions were: improve the
 store listing's keywords and layout, make the screenshots show individual
 features with captions, add a way to share the app and a way to send
 feedback, add first-run onboarding and an in-app help or FAQ section, and
-check accessibility. They also suggested a rating prompt, which I chose not
-to add (see question 8).
+check accessibility. They also suggested a rate button with a prompt at
+"neutral" times; I added the button but not the prompt (see question 8).
 
 ### 5. Who is the intended audience for your app?
 
@@ -73,6 +75,8 @@ realistic. Your call.]**
   in the app's own style, plus a new feature graphic.
 - Added "Share app" to the settings menu, which opens the Android share
   sheet with a link to the app.
+- Added "Rate on Google Play" next to it, which opens the app's Play
+  listing so anyone who wants to leave a rating can find it in one tap.
 - Added "Send feedback", which opens a new GitHub issue with the app and
   device details filled in, so bugs and feature requests have a home.
 - Added first-run tips that show the gestures you'd never guess (swipe to
@@ -83,9 +87,10 @@ realistic. Your call.]**
 - Accessibility fixes: larger touch targets in the menu, better screen
   reader labels, and full keyboard access to the menu.
 
-One suggestion I deliberately didn't take: an in-app rating prompt. I find
-those prompts annoying in my own apps, and a calculator should just
-calculate, so there's no rating button or prompt and no nagging to share.
+One part I deliberately didn't take: prompting people to rate. I find those
+pop-ups annoying, and a calculator should just calculate, so the rate
+button only does anything when someone presses it. There's no rating
+prompt, no reminder, and no nagging to share.
 
 ### 9. How did you decide that your app is ready for production?
 
@@ -103,5 +108,5 @@ previous apps. If this is your first application for bf-12c, say so in a
 sentence. If you were turned down before, describe the difference, e.g.:]**
 This time I ran a full closed test with outside testers on a wide range of
 devices, got a written report, and acted on it before applying: a clearer
-store listing, feature screenshots, sharing, a feedback link, onboarding
-tips, an FAQ and accessibility fixes.
+store listing, feature screenshots, share and rate buttons, a feedback
+link, onboarding tips, an FAQ and accessibility fixes.

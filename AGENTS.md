@@ -50,7 +50,8 @@ repository's security settings.
 - `CalcViewModel.kt` — owns the engine on a single background thread,
   runs programs, persists to SharedPreferences (also the menu and
   first-run tips state).
-- `Links.kt` — Share app, Send feedback and the privacy policy: intents to
+- `Links.kt` — Share app, Rate on Google Play, Send feedback and the
+  privacy policy: intents to
   the share sheet and browser, never a network call. A missing handler
   returns false instead of crashing.
 - `ui/` — Compose: `Keyboard.kt` (landscape 4×10 and portrait folded
@@ -84,9 +85,10 @@ repository's security settings.
   (scripts are typed with the tiny keystroke DSL in `Keystrokes.kt`).
 - Every stored result is rounded and range-checked (`fit`) before any
   register is written, so an error never leaves the stack half-updated.
-- No rating prompts, review APIs or "please share" nags, and no email
-  addresses in the app: feedback goes to GitHub issues. `InvariantsTest`
-  checks this.
+- Rating is a passive menu item (ON › RATE ON GOOGLE PLAY opens the Play
+  listing), never a prompt, reminder or the in-app review API. No "please
+  share" nags, and no email addresses in the app: feedback goes to GitHub
+  issues. `InvariantsTest` checks this.
 - The first-run tips must never block: one tap, Back, Esc or any key
   dismisses them. Launching with the boolean extra
   `com.bradflaugher.bf12c.SKIP_TIPS` skips them (screenshots use it).

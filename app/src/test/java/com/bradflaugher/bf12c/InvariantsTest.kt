@@ -32,15 +32,16 @@ class InvariantsTest {
         assertTrue("backups must stay off", manifest.contains("android:allowBackup=\"false\""))
     }
 
-    @Test fun noRatingPromptsOrEmail() {
-        // By design: no "rate us" nag or review API, and feedback goes to GitHub, not an inbox.
+    @Test fun noReviewPromptsOrEmail() {
+        // By design: rating is a plain menu link (Links.rateApp), never the in-app review
+        // API or a prompt, and feedback goes to GitHub, not an inbox.
         val sources = File(app, "src/main").walk().filter { it.extension in setOf("kt", "xml") }.toList()
         val build = File(app, "build.gradle.kts").readText() + File(repo, "gradle/libs.versions.toml").readText()
         assertFalse("no Play review library", build.contains("com.google.android.play"))
         for (file in sources) {
             val text = file.readText()
-            assertFalse("${file.name}: no review API", text.contains("ReviewManager"))
-            assertFalse("${file.name}: no market:// rating links", text.contains("market://"))
+            assertFalse("${file.name}: no review API", text.contains("ReviewManager") || text.contains("requestReviewFlow"))
+            if (file.name != "Links.kt") assertFalse("${file.name}: store links live in Links.kt", text.contains("market://"))
             assertFalse("${file.name}: no email addresses", Regex("""[\w.+-]+@[\w-]+\.[a-z]{2,}""").containsMatchIn(text))
         }
     }

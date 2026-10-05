@@ -63,9 +63,20 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   way people copy them: `1,234.50`, `$1,000`, `(250.00)` (negative), `−3.5`,
   `12%`, `6.02e23`; a decimal comma like `1,5` is refused rather than
   misread. A pasted value behaves like a recall, so `PV` after a
-  paste stores it. The `ON` key opens a system menu with four phosphors:
-  P1 green, P3 amber, ice, and a classic 12c LCD; back closes it.
-  Pressing a lit `f` or `g` again cancels it (the lit key is ringed).
+  paste stores it. Pressing a lit `f` or `g` again cancels it (the lit
+  key is ringed).
+- **The ON menu.** Four phosphors (P1 green, P3 amber, ice, and a classic
+  12c LCD), haptics, copy / paste, the tips again, a built-in manual and
+  FAQ, **Share app** (the system share sheet with the Play link), **Rate on
+  Google Play** (opens the Play listing), **Send feedback** (a new GitHub
+  issue with the version and device filled in), the privacy policy and the
+  version. Back or `Esc` closes it.
+- **First-run tips.** One screen on the first launch teaches what the keys
+  can't: swipe to backspace, long-press to copy, double-tap to paste, `f` /
+  `g`, the ON menu, the keyboard shortcuts, and what the other orientation
+  gives you. One tap anywhere dismisses it, and ON › TIPS brings it back.
+  There is no rating prompt, review pop-up or "please share" nag, on
+  purpose: rating and sharing are menu items, there when you want them.
 - **Every screen.** Phones, tablets, foldables and Chromebooks, in split
   screen or a resizable desktop window. The layout follows the window, not
   the device; tablets and unfolded foldables print the legends, registers
@@ -154,10 +165,12 @@ a tiny keystroke DSL (`"30 g n 6.5 g i 100000 PV 0 FV PMT"`, see
   program-line merging, keycodes and mnemonics.
 - `InvariantsTest` — the project rules: no Android in the engine, no
   permissions, touchscreen optional, no backups or device transfer, no
-  rating prompts or email addresses, CI actions pinned to SHAs, compileSdk
+  review API or prompts, store links only in `Links.kt`, no email
+  addresses, CI actions pinned to SHAs, compileSdk
   matching targetSdk, and no `SDK_INT` checks.
-- `LinksTest` — the Share app and Send feedback strings: the Play link
-  matches the release application ID and the issue URL is well formed.
+- `LinksTest` — the Share, Rate and Send feedback strings: the Play and
+  market links match the release application ID and the issue URL is well
+  formed.
 
 GitHub Actions runs them on every pull request and push to `main`
 (`.github/workflows/ci.yml`, one check each for unit tests and lint, with a

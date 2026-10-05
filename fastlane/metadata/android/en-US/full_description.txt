@@ -29,7 +29,7 @@ PROGRAMS
 ON THE GLASS
 • Swipe the display left to backspace. Long-press copies X. Double-tap pastes, and paste understands 1,234.50, $1,000, (250.00) and 6.02e23.
 • Four phosphor themes: P1 green, P3 amber, ice, and a classic 12c LCD.
-• The ON key opens the system menu: themes, haptics, a built-in manual and FAQ, first-run tips, sharing, and a link to report a bug or ask for a feature.
+• The ON key opens the system menu: themes, haptics, a built-in manual and FAQ, first-run tips, sharing, rating, and a link to report a bug or ask for a feature. It never nags you to rate or share.
 
 EVERY SCREEN
 • Phones, tablets, foldables and Chromebooks, in split screen or a resizable window. The layout follows the window, and tablets print everything bigger.

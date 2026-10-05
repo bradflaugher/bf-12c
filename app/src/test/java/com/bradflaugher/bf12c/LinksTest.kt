@@ -18,6 +18,7 @@ class LinksTest {
         assertEquals(id, Links.APPLICATION_ID)
         assertEquals("https://play.google.com/store/apps/details?id=$id", Links.PLAY_URL)
         assertTrue("the shared text carries the link", Links.SHARE_TEXT.endsWith(Links.PLAY_URL))
+        assertEquals("market://details?id=$id", Links.MARKET_URL)
     }
 
     @Test fun feedbackOpensANewIssueWithTheDetailsFilledIn() {

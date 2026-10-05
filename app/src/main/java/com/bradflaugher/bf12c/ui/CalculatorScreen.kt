@@ -135,13 +135,14 @@ fun CalculatorScreen(vm: CalcViewModel = viewModel()) {
 
     // A hardware keyboard (ChromeOS, tablets, desktop windows) types into the calculator.
     val onHardwareKey: (KeyEvent) -> Boolean = handler@{ e ->
-        if (e.type != KeyEventType.KeyDown || e.isAltPressed || e.isMetaPressed) return@handler false
-        // The tips never stand in the way: Esc or Enter just dismisses them, any other key
-        // dismisses them and does its job.
+        if (e.type != KeyEventType.KeyDown) return@handler false
+        // The tips never stand in the way: any key dismisses them. Esc and Enter stop
+        // there; any other key goes on to do its job.
         if (vm.tipsOpen) {
             vm.dismissTips()
             if (e.key == KeyCode.Escape || e.key == KeyCode.Enter || e.key == KeyCode.NumPadEnter) return@handler true
         }
+        if (e.isAltPressed || e.isMetaPressed) return@handler false
         if (e.isCtrlPressed) {
             when (e.key) {
                 KeyCode.C -> copy()
