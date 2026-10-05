@@ -324,7 +324,7 @@ class Calculator {
                     finishEntry()
                 }
             }
-            Key.ON -> Unit // Handled by the host (menu).
+            Key.MENU -> Unit // Handled by the host (menu).
             else -> Unit
         }
     }

@@ -15,7 +15,7 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   <tr>
     <td align="center" width="33%"><img src="docs/screenshots/portrait.png" alt="Portrait layout"><p><em><b>Portrait</b> · folded</em></p></td>
     <td align="center" width="33%"><img src="docs/screenshots/program.png" alt="Program mode"><p><em><b>Program mode</b></em></p></td>
-    <td align="center" width="33%"><img src="docs/screenshots/menu.png" alt="System menu"><p><em><b>ON</b> — green-screen system menu</em></p></td>
+    <td align="center" width="33%"><img src="docs/screenshots/menu.png" alt="System menu"><p><em><b>MENU</b> — green-screen system menu</em></p></td>
   </tr>
   <tr>
     <td align="center" colspan="3">
@@ -42,7 +42,10 @@ searches next to every other calculator, with a pocket-12c adaptive icon
 - **The 12c keyboard, key for key.** Landscape is the classic 4×10 layout:
   gold `f` legends above, blue `g` legends below, the tall ENTER, and the
   BOND / DEPRECIATION / CLEAR brackets. Portrait folds it in half, financial
-  keys on top and the number pad at the bottom where your thumbs are.
+  keys on top and the number pad at the bottom where your thumbs are. One
+  deliberate change: the 12c's ON key reads **MENU** (same place, keycode
+  41), because on a phone it opens the system menu rather than switching
+  anything off.
 - **RPN with a 4-level stack** (X Y Z T), LSTx, stack lift that behaves like
   the real thing, and continuous memory: everything survives restarts.
 - **34 significant digits** in every register (BigDecimal, not doubles).
@@ -65,7 +68,7 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   misread. A pasted value behaves like a recall, so `PV` after a
   paste stores it. Pressing a lit `f` or `g` again cancels it (the lit
   key is ringed).
-- **The ON menu.** Four phosphors (P1 green, P3 amber, ice, and a classic
+- **The MENU key.** Four phosphors (P1 green, P3 amber, ice, and a classic
   12c LCD), haptics, copy / paste, the tips again, a built-in manual and
   FAQ, **Share app** (the system share sheet with the Play link), **Rate on
   Google Play** (opens the Play listing), **Send feedback** (a new GitHub
@@ -73,8 +76,8 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   version. Back or `Esc` closes it.
 - **First-run tips.** One screen on the first launch teaches what the keys
   can't: swipe to backspace, long-press to copy, double-tap to paste, `f` /
-  `g`, the ON menu, the keyboard shortcuts, and what the other orientation
-  gives you. One tap anywhere dismisses it, and ON › TIPS brings it back.
+  `g`, the MENU key, the keyboard shortcuts, and what the other orientation
+  gives you. One tap anywhere dismisses it, and MENU › TIPS brings it back.
   There is no rating prompt, review pop-up or "please share" nag, on
   purpose: rating and sharing are menu items, there when you want them.
 - **Every screen.** Phones, tablets, foldables and Chromebooks, in split
@@ -86,12 +89,12 @@ searches next to every other calculator, with a pocket-12c adaptive icon
 - **Hardware keyboard.** Digits, `.` (or `,`), `+ − * /` (`x` works too),
   `Enter`, `Backspace` (backspace), `Delete` (CLx), `f`, `g`, `e` (EEX),
   `^` (yˣ), `%`, `Ctrl+C` / `Ctrl+V` to copy / paste X, `F1` (or the Menu
-  key) to open the ON menu and `Esc` to close it. In the menu, `Tab` and the
+  key) to open the menu and `Esc` to close it. In the menu, `Tab` and the
   arrows move a visible focus bar and `Enter` picks.
 - **TalkBack.** Every key reads in words ("y to the x, f bond price, g
   square root"), or just the shifted function while `f` or `g` is lit.
   The display announces each result and offers Copy X, Paste and
-  Backspace as actions. The ON menu and the tips are proper panes with
+  Backspace as actions. The menu and the tips are proper panes with
   headings, radio buttons and a switch, and every menu item is at least
   48dp tall.
 - **No permissions at all.** No network, no backups or device-to-device

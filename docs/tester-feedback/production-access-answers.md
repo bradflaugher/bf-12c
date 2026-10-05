@@ -73,6 +73,8 @@ realistic. Your call.]**
   short sections.
 - Replaced the screenshots with captioned ones, each showing one feature,
   in the app's own style, plus a new feature graphic.
+- Relabelled the key that opens the settings menu from "ON" (as on the
+  real HP-12C) to "MENU", so people can find the menu without being told.
 - Added "Share app" to the settings menu, which opens the Android share
   sheet with a link to the app.
 - Added "Rate on Google Play" next to it, which opens the app's Play

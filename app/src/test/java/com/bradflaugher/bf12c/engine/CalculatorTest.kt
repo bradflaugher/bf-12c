@@ -619,6 +619,23 @@ class CalculatorTest {
         assertEquals(null, Key.ADD.spokenF)
     }
 
+    @Test fun menuKeyIsTheOnKeyRelabelled() {
+        // A deliberate extension: the 12c's ON key reads MENU, since an app can't be
+        // switched off. It keeps ON's place and HP keycode 41, and no legends.
+        assertEquals("MENU", Key.MENU.label)
+        assertEquals(41, Key.MENU.code)
+        assertEquals(Key.MENU, Key.byCode(41))
+        assertEquals(Key.MENU, Key.ROWS[3][0])
+        assertEquals("menu", Key.MENU.spoken)
+        assertEquals(null, Key.MENU.f)
+        assertEquals(null, Key.MENU.g)
+        // The host opens the menu; the engine and a program ignore the key.
+        val c = run("12 ENTER 3 MENU +")
+        assertClose("15", c.x)
+        val p = run("f RS 3 MENU +")
+        assertEquals(listOf(listOf(Key.D3), listOf(Key.ADD)), p.program)
+    }
+
     @Test fun typedCharacters() {
         for (d in 0..9) assertEquals(Key.digit(d), Key.typed('0' + d))
         assertEquals(Key.ADD, Key.typed('+'))

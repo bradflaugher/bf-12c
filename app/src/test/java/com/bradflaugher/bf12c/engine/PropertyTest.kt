@@ -25,7 +25,7 @@ class PropertyTest {
     }
 
     @Test fun keystrokeFuzzNeverCrashesOrStalls() {
-        val keys = Key.entries.filter { it != Key.ON }
+        val keys = Key.entries.filter { it != Key.MENU }
         var slowest = 0L
         var slowestAfter = ""
         repeat(120) { round ->

@@ -52,7 +52,7 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun press(key: Key) {
-        if (key == Key.ON) {
+        if (key == Key.MENU) {
             toggleMenu()
             return
         }

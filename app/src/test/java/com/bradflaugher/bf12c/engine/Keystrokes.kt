@@ -15,7 +15,7 @@ private val KEY_NAMES = mapOf(
     "D%" to Key.DELTA_PCT, "%" to Key.PCT, "EEX" to Key.EEX, "*" to Key.MUL, "RS" to Key.RS,
     "SST" to Key.SST, "RDN" to Key.RDN, "SWAP" to Key.SWAP, "CLX" to Key.CLX, "ENTER" to Key.ENTER,
     "-" to Key.SUB, "f" to Key.F, "g" to Key.G, "STO" to Key.STO, "RCL" to Key.RCL, "." to Key.DOT,
-    "S+" to Key.SIGMA_PLUS, "+" to Key.ADD, "ON" to Key.ON,
+    "S+" to Key.SIGMA_PLUS, "+" to Key.ADD, "MENU" to Key.MENU,
 )
 
 /** Types [script] into this calculator. */

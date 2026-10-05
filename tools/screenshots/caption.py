@@ -43,7 +43,7 @@ CAPTIONS = {
         ("stack", "REAL RPN, FOUR-LEVEL STACK", "X Y Z T in view, plus LSTx and memory"),
         ("program", "KEYSTROKE PROGRAMS", "99 lines, 12c keycodes and a readable mnemonic"),
         ("amber", "FOUR PHOSPHORS", "P1 green, P3 amber, ice, and a classic 12c LCD"),
-        ("menu", "ONE KEY FOR EVERYTHING ELSE", "ON opens themes, haptics, the manual and tips"),
+        ("menu", "ONE KEY FOR EVERYTHING ELSE", "MENU opens themes, haptics, the manual and tips"),
         ("lcd", "THE FULL 12C KEYBOARD", "Turn sideways for the classic 4×10 layout, key for key"),
     ],
     "tablet": [
@@ -51,7 +51,7 @@ CAPTIONS = {
         ("portrait", "NPV, IRR AND CASH FLOWS", "Portrait folds the keys and keeps X Y Z T in view"),
         ("digits", "34 SIGNIFICANT DIGITS", "In every register. f EEX shows all of them."),
         ("program", "KEYSTROKE PROGRAMS", "99 lines, 12c keycodes and a readable mnemonic"),
-        ("menu", "ONE KEY FOR EVERYTHING ELSE", "ON opens themes, haptics, the manual and tips"),
+        ("menu", "ONE KEY FOR EVERYTHING ELSE", "MENU opens themes, haptics, the manual and tips"),
         ("lcd", "FOUR PHOSPHORS", "A classic 12c LCD, or P1 green, P3 amber and ice"),
     ],
 }
