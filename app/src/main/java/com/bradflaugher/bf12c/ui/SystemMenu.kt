@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
@@ -258,7 +258,9 @@ private fun CrtOverlay(
         ) {
             BasicText(title, style = style.title, maxLines = 1, softWrap = false, modifier = Modifier.semantics { heading() })
             Rule(ink, Modifier.padding(top = 8.dp, bottom = 4.dp))
-            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) { body(style) }
+            // Each pane (menu, manual) starts at its own top, not where the last one was scrolled.
+            val scroll = remember(title) { ScrollState(0) }
+            Column(Modifier.weight(1f, fill = false).verticalScroll(scroll)) { body(style) }
             Rule(ink, Modifier.padding(top = 6.dp, bottom = 2.dp))
             footer(style)
         }
@@ -331,7 +333,12 @@ private fun MenuItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BasicText(prefix, style = style.item, maxLines = 1, softWrap = false, modifier = Modifier.clearAndSetSemantics {})
-        BasicText(" $label", style = style.item, maxLines = 1, softWrap = false)
+        if (value == null) {
+            // A plain item wraps rather than clip, for big font scales in narrow windows.
+            BasicText(" $label", style = style.item, modifier = Modifier.weight(1f))
+        } else {
+            BasicText(" $label", style = style.item, maxLines = 1, softWrap = false)
+        }
         if (value != null) {
             val dot = style.ink.copy(alpha = 0.4f)
             Spacer(
