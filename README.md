@@ -19,6 +19,12 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   </tr>
   <tr>
     <td align="center" colspan="3">
+      <img src="docs/screenshots/tips.png" alt="First-run tips" width="33%">
+      <p><em><b>First run</b> — one screen of tips, gone with a tap</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3">
       <img src="docs/screenshots/f-shift.png" alt="f shift active" width="49%">
       <img src="docs/screenshots/amber.png" alt="P3 amber phosphor" width="49%">
       <p><em><b>f shift</b> — gold legends light up · <b>P3 amber</b>, one of four phosphors</em></p>
@@ -57,9 +63,20 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   way people copy them: `1,234.50`, `$1,000`, `(250.00)` (negative), `−3.5`,
   `12%`, `6.02e23`; a decimal comma like `1,5` is refused rather than
   misread. A pasted value behaves like a recall, so `PV` after a
-  paste stores it. The `ON` key opens a system menu with four phosphors:
-  P1 green, P3 amber, ice, and a classic 12c LCD; back closes it.
-  Pressing a lit `f` or `g` again cancels it (the lit key is ringed).
+  paste stores it. Pressing a lit `f` or `g` again cancels it (the lit
+  key is ringed).
+- **The ON menu.** Four phosphors (P1 green, P3 amber, ice, and a classic
+  12c LCD), haptics, copy / paste, the tips again, a built-in manual and
+  FAQ, **Share app** (the system share sheet with the Play link), **Rate on
+  Google Play** (opens the Play listing), **Send feedback** (a new GitHub
+  issue with the version and device filled in), the privacy policy and the
+  version. Back or `Esc` closes it.
+- **First-run tips.** One screen on the first launch teaches what the keys
+  can't: swipe to backspace, long-press to copy, double-tap to paste, `f` /
+  `g`, the ON menu, the keyboard shortcuts, and what the other orientation
+  gives you. One tap anywhere dismisses it, and ON › TIPS brings it back.
+  There is no rating prompt, review pop-up or "please share" nag, on
+  purpose: rating and sharing are menu items, there when you want them.
 - **Every screen.** Phones, tablets, foldables and Chromebooks, in split
   screen or a resizable desktop window. The layout follows the window, not
   the device; tablets and unfolded foldables print the legends, registers
@@ -68,15 +85,18 @@ searches next to every other calculator, with a pocket-12c adaptive icon
   required: a mouse or trackpad presses keys too.
 - **Hardware keyboard.** Digits, `.` (or `,`), `+ − * /` (`x` works too),
   `Enter`, `Backspace` (backspace), `Delete` (CLx), `f`, `g`, `e` (EEX),
-  `^` (yˣ), `%`, `Ctrl+C` / `Ctrl+V` to copy / paste X, and `Esc` to close
-  the menu.
+  `^` (yˣ), `%`, `Ctrl+C` / `Ctrl+V` to copy / paste X, `F1` (or the Menu
+  key) to open the ON menu and `Esc` to close it. In the menu, `Tab` and the
+  arrows move a visible focus bar and `Enter` picks.
 - **TalkBack.** Every key reads in words ("y to the x, f bond price, g
   square root"), or just the shifted function while `f` or `g` is lit.
   The display announces each result and offers Copy X, Paste and
-  Backspace as actions. The ON menu is a proper pane with headings, radio
-  buttons and a switch.
+  Backspace as actions. The ON menu and the tips are proper panes with
+  headings, radio buttons and a switch, and every menu item is at least
+  48dp tall.
 - **No permissions at all.** No network, no backups or device-to-device
-  transfer, no analytics.
+  transfer, no analytics. Share and feedback hand off to the share sheet
+  and the browser; bf-12c itself never goes online.
 
 ## Latest Android, no compatibility code
 
@@ -109,13 +129,21 @@ The README and Play screenshots are captures of the real app on an
 emulator (see "Visual checks" in [`AGENTS.md`](AGENTS.md)), taken by
 [`tools/screenshots/shoot.py`](tools/screenshots/shoot.py). It installs
 the debug build, sets an exact 9:16 screen at each class's density, types
-each scene on the calculator's own keys and writes the PNGs into
-`fastlane/metadata/android/en-US/images/` (and `docs/screenshots/`):
+each scene on the calculator's own keys (with the first-run tips skipped)
+and saves the raw captures in `build/screenshots/`. The README shots in
+`docs/screenshots/` stay uncaptioned. Then
+[`caption.py`](tools/screenshots/caption.py) (ImageMagick, in the app's
+own fonts and colors) adds a headline and subline to each one for Google
+Play and writes them into `fastlane/metadata/android/en-US/images/`, plus
+the feature graphic:
 
 ```sh
 ./gradlew assembleDebug
 tools/screenshots/shoot.py emulator-5554 phone   # also tab7, tab10
+tools/screenshots/caption.py phone               # just re-caption (or feature)
 ```
+
+The captions live in `CAPTIONS` at the top of `caption.py`.
 
 Nothing in the app or its tests depends on it.
 
@@ -136,9 +164,13 @@ a tiny keystroke DSL (`"30 g n 6.5 g i 100000 PV 0 FV PMT"`, see
 - `FormatTest`, `ProgramParserTest` — display formatting, paste parsing,
   program-line merging, keycodes and mnemonics.
 - `InvariantsTest` — the project rules: no Android in the engine, no
-  permissions, touchscreen optional, no backups or device transfer, CI
-  actions pinned to SHAs, compileSdk matching targetSdk, and no `SDK_INT`
-  checks.
+  permissions, touchscreen optional, no backups or device transfer, no
+  review API or prompts, store links only in `Links.kt`, no email
+  addresses, CI actions pinned to SHAs, compileSdk
+  matching targetSdk, and no `SDK_INT` checks.
+- `LinksTest` — the Share, Rate and Send feedback strings: the Play and
+  market links match the release application ID and the issue URL is well
+  formed.
 
 GitHub Actions runs them on every pull request and push to `main`
 (`.github/workflows/ci.yml`, one check each for unit tests and lint, with a

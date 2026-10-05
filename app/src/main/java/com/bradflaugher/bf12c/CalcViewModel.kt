@@ -40,6 +40,10 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
     var menuOpen by mutableStateOf(false)
         private set
 
+    /** The first-run tips: up until they are dismissed once, then only on request. */
+    var tipsOpen by mutableStateOf(!prefs.getBoolean("tipsSeen", false))
+        private set
+
     init {
         viewModelScope.launch(engine) {
             prefs.getString("state", null)?.let { calc.restore(decode(it)) }
@@ -49,7 +53,7 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
 
     fun press(key: Key) {
         if (key == Key.ON) {
-            menuOpen = !menuOpen
+            toggleMenu()
             return
         }
         viewModelScope.launch(engine) {
@@ -87,6 +91,26 @@ class CalcViewModel(app: Application) : AndroidViewModel(app) {
 
     fun closeMenu() {
         menuOpen = false
+    }
+
+    fun toggleMenu() {
+        menuOpen = !menuOpen
+    }
+
+    /** Menu, then tips: "show tips again" swaps one overlay for the other. */
+    fun showTips() {
+        menuOpen = false
+        tipsOpen = true
+    }
+
+    fun dismissTips() {
+        tipsOpen = false
+        prefs.edit { putBoolean("tipsSeen", true) }
+    }
+
+    /** Screenshot and test runs start without the tips, and still see them next launch. */
+    fun skipTips() {
+        tipsOpen = false
     }
 
     fun selectPhosphor(p: Phosphor) {

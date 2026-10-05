@@ -11,10 +11,14 @@ adb and ImageMagick.
 
 The script installs the debug APK, sizes the screen to an exact 9:16 at a
 real density for that class, types each scene on the calculator's own keys
-(found through their TalkBack labels) and writes 24-bit PNGs into
-fastlane/metadata/android/en-US/images/. `phone` and `tab10` also refresh
-the README shots in docs/screenshots/. When it is done it puts back exactly
-the screen size and density overrides, rotation and settings it found.
+(found through their TalkBack labels) and writes the raw 24-bit captures
+into build/screenshots/<class>/. caption.py then turns them into the
+captioned Play images in fastlane/metadata/android/en-US/images/ (and,
+for `phone`, the feature graphic). `phone` and `tab10` also refresh the
+uncaptioned README shots in docs/screenshots/. Every scene starts with the
+first-run tips skipped, except the README's tips shot. When it is done it
+puts back exactly the screen size and density overrides, rotation and
+settings it found.
 """
 import os
 import re
@@ -28,8 +32,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 PKG = "com.bradflaugher.bf12c.debug"
 ACTIVITY = f"{PKG}/com.bradflaugher.bf12c.MainActivity"
-IMAGES = REPO / "fastlane/metadata/android/en-US/images"
+RAW = REPO / "build/screenshots"
 DOCS = REPO / "docs/screenshots"
+SKIP_TIPS = "com.bradflaugher.bf12c.SKIP_TIPS"
 MAGICK = shutil.which("magick") or shutil.which("convert") or sys.exit("needs ImageMagick")
 ADB = shutil.which("adb") or os.path.join(
     os.environ.get("ANDROID_HOME", os.path.expanduser("~/Android/Sdk")), "platform-tools", "adb"
@@ -39,9 +44,9 @@ ADB = shutil.which("adb") or os.path.join(
 # density keeps each class's real window size in dp, so tablets get the
 # tablet layout: ~411dp phone, ~612dp 7-inch, 810dp 10-inch.
 DEVICES = {
-    "phone": ((1080, 1920), 420, IMAGES / "phoneScreenshots"),
-    "tab7": ((1224, 2176), 320, IMAGES / "sevenInchScreenshots"),
-    "tab10": ((1620, 2880), 320, IMAGES / "tenInchScreenshots"),
+    "phone": ((1080, 1920), 420),
+    "tab7": ((1224, 2176), 320),
+    "tab10": ((1620, 2880), 320),
 }
 
 # The first word group of each key's TalkBack label (Key.spoken).
@@ -59,6 +64,8 @@ class Device:
     def __init__(self, serial):
         self.serial = serial
         self.keys = {}
+        # A tablet AVD can be landscape-first; then rotation 0 is landscape.
+        self.landscape_first = False
 
     def adb(self, *args, capture=False):
         cmd = [ADB, "-s", self.serial, *args]
@@ -109,17 +116,20 @@ class Device:
                 return
         sys.exit(f"no on-screen text matches {pattern}")
 
-    def rotate(self, landscape):
+    def rotate(self, landscape, keys=True):
         self.sh("settings", "put", "system", "accelerometer_rotation", "0")
-        self.sh("settings", "put", "system", "user_rotation", "1" if landscape else "0")
+        rotated = landscape != self.landscape_first
+        self.sh("settings", "put", "system", "user_rotation", "1" if rotated else "0")
         time.sleep(2.5)
-        self.map_keys()
+        if keys:
+            self.map_keys()
 
-    def fresh(self, landscape, phosphor=None):
+    def fresh(self, landscape, phosphor=None, tips=False):
         """A clean calculator: no stack, registers or program left from the last scene."""
         self.sh("pm", "clear", PKG)
-        self.sh("am", "start", "-W", "-n", ACTIVITY)
-        self.rotate(landscape)
+        self.sh("am", "start", "-W", "-n", ACTIVITY, *([] if tips else ["--ez", SKIP_TIPS, "true"]))
+        # The tips hide the keys from TalkBack, and so from map_keys.
+        self.rotate(landscape, keys=not tips)
         # The boot banner types itself out first.
         time.sleep(1.5)
         if phosphor:
@@ -201,84 +211,108 @@ ROOT_TWO = "f EEX 2 g yx"  # all 34 digits of the square root of 2
 IRR = "f 2 25000 CHS g PV 6000 g PMT 8000 g PMT 9000 g PMT 7500 g PMT f FV"  # IRR 8.12 %
 TAX_PROGRAM = "f RS f RDN ENTER 8.25 % + g RDN 0 0"  # price plus 8.25 % sales tax
 DAYS = "f 0 9.292026 ENTER 12.252026 g EEX"  # days until Christmas
+RECEIPT = "f 2 19.99 ENTER 4.5 ENTER 12.75 ENTER 7.25"  # four prices on the stack
 
 
 def phone(d, out):
     d.fresh(landscape=False)
     d.type(MORTGAGE)
-    d.shot(out / "1_portrait.png")
+    d.shot(out / "tvm.png")
 
     d.fresh(landscape=True)
     d.type(ROOT_TWO)
-    d.shot(out / "2_landscape.png")
+    d.shot(out / "digits.png")
 
     d.fresh(landscape=True)
     d.type(IRR + " f")
-    d.shot(out / "3_f-shift.png")
+    d.shot(out / "cashflows.png")
+
+    d.fresh(landscape=False)
+    d.type(RECEIPT)
+    d.shot(out / "stack.png")
 
     d.fresh(landscape=False, phosphor="ICE")
     d.type(TAX_PROGRAM)
-    d.shot(out / "4_program.png")
+    d.shot(out / "program.png")
 
     d.fresh(landscape=True, phosphor="P3 AMBER")
     d.type(DAYS)
-    d.shot(out / "5_amber.png")
+    d.shot(out / "amber.png")
 
     d.fresh(landscape=False)
     d.type(MORTGAGE + " ON")
-    d.shot(out / "6_menu.png")
+    d.shot(out / "menu.png")
 
     d.fresh(landscape=True, phosphor="12C LCD")
     d.type(IRR)
-    d.shot(out / "7_lcd.png")
+    d.shot(out / "lcd.png")
+
+    # README only: what a first launch looks like.
+    d.fresh(landscape=False, tips=True)
+    d.shot(out / "tips.png")
 
 
 def tablet(d, out):
     d.fresh(landscape=True)
     d.type(MORTGAGE)
-    d.shot(out / "1_landscape.png")
+    d.shot(out / "landscape.png")
 
     d.fresh(landscape=False)
     d.type(IRR)
-    d.shot(out / "2_portrait.png")
+    d.shot(out / "portrait.png")
 
     d.fresh(landscape=True, phosphor="P3 AMBER")
     d.type(ROOT_TWO + " f")
-    d.shot(out / "3_f-shift.png")
+    d.shot(out / "digits.png")
+
+    d.fresh(landscape=False, phosphor="ICE")
+    d.type(TAX_PROGRAM)
+    d.shot(out / "program.png")
 
     d.fresh(landscape=False)
     d.type(DAYS + " ON")
-    d.shot(out / "4_menu.png")
+    d.shot(out / "menu.png")
+
+    d.fresh(landscape=True, phosphor="12C LCD")
+    d.type(IRR)
+    d.shot(out / "lcd.png")
 
 
 def main():
     if len(sys.argv) != 3 or sys.argv[2] not in DEVICES:
         sys.exit(__doc__)
+    which = sys.argv[2]
     d = Device(sys.argv[1])
-    (w, h), density, out = DEVICES[sys.argv[2]]
+    (w, h), density = DEVICES[which]
+    out = RAW / which
     apk = REPO / "app/build/outputs/apk/debug/app-debug.apk"
     d.adb("install", "-r", str(apk))
     saved = save_display(d)
     # wm size is in the display's natural orientation; a tablet may be landscape-first.
     pw, ph = saved["physical"]
-    d.sh("wm", "size", f"{h}x{w}" if pw > ph else f"{w}x{h}")
+    d.landscape_first = pw > ph
+    d.sh("wm", "size", f"{h}x{w}" if d.landscape_first else f"{w}x{h}")
     d.sh("wm", "density", str(density))
     demo_status_bar(d)
     try:
         for old in out.glob("*.png"):
             old.unlink()
-        (phone if sys.argv[2] == "phone" else tablet)(d, out)
+        (phone if which == "phone" else tablet)(d, out)
     finally:
         restore_display(d, saved)
-    if sys.argv[2] == "phone":
+    # The README keeps the plain captures; Play gets them captioned.
+    if which == "phone":
         for name, src in {
-            "portrait.png": "1_portrait.png", "landscape.png": "2_landscape.png",
-            "f-shift.png": "3_f-shift.png", "program.png": "4_program.png", "amber.png": "5_amber.png",
-            "menu.png": "6_menu.png",
+            "portrait.png": "tvm.png", "landscape.png": "digits.png", "f-shift.png": "cashflows.png",
+            "program.png": "program.png", "amber.png": "amber.png", "menu.png": "menu.png", "tips.png": "tips.png",
         }.items():
             (DOCS / name).write_bytes((out / src).read_bytes())
-    if sys.argv[2] == "tab10":
-        (DOCS / "tablet.png").write_bytes((out / "1_landscape.png").read_bytes())
+    if which == "tab10":
+        (DOCS / "tablet.png").write_bytes((out / "landscape.png").read_bytes())
+    caption = [sys.executable, str(Path(__file__).with_name("caption.py"))]
+    subprocess.run([*caption, which], check=True)
+    if which == "phone":
+        subprocess.run([*caption, "feature"], check=True)
 
 
 if __name__ == "__main__":
