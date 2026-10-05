@@ -163,6 +163,7 @@ fun TipsOverlay(vm: CalcViewModel) {
         pane = "Tips",
         onDismiss = vm::dismissTips,
         dismissLabel = "Dismiss tips",
+        dismissOnPanelTap = true,
         footer = { style ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { MenuItem("GOT IT", null, style, focusFirst = true) { vm.dismissTips() } }
@@ -201,6 +202,8 @@ private fun CrtOverlay(
     pane: String,
     onDismiss: () -> Unit,
     dismissLabel: String,
+    /** The tips go with a tap anywhere, the panel included; the menu's panel holds its taps. */
+    dismissOnPanelTap: Boolean = false,
     footer: @Composable ColumnScope.(MenuStyle) -> Unit,
     body: @Composable ColumnScope.(MenuStyle) -> Unit,
 ) {
@@ -236,8 +239,8 @@ private fun CrtOverlay(
                 .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFF030704))
                 .border(1.dp, ink.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
-                // Swallow taps on the panel so they don't dismiss it; not a control.
-                .pointerInput(Unit) { detectTapGestures {} }
+                // The menu swallows taps on its panel so they don't close it; not a control.
+                .pointerInput(dismissOnPanelTap) { detectTapGestures { if (dismissOnPanelTap) onDismiss() } }
                 .semantics {
                     paneTitle = pane
                     isTraversalGroup = true
