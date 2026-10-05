@@ -50,7 +50,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.bradflaugher.bf12c.engine.Key
 
@@ -278,18 +280,23 @@ private fun KeyCap(key: Key, shift: Shift, ink: Color, pressed: Boolean, active:
                     VerticalLabel(key.label, labelColor.copy(alpha = primaryAlpha))
                 } else {
                     // Sized as if three characters wide, so every key's label matches.
+                    // MENU, the one four-letter face, sets a touch tighter and uses the
+                    // key's full width, so on narrow keys (split screen) it shrinks
+                    // little or not at all next to STO and RCL.
+                    val long = key.label.length > 3
                     FitText(
                         key.label,
                         maxFontSize = 20.sp * LocalKeyScale.current,
                         minFontSize = 8.sp,
                         step = 1.sp,
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 3.dp),
+                        modifier = Modifier.fillMaxSize().padding(horizontal = if (long) 1.dp else 3.dp),
                         sizing = listOf(key.label, "000"),
                         style = TextStyle(
                             color = labelColor.copy(alpha = primaryAlpha),
                             fontFamily = Fonts.mono,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
+                            letterSpacing = if (long) (-0.04).em else TextUnit.Unspecified,
                         ),
                     )
                 }
