@@ -67,6 +67,18 @@ subline outside the framed capture, never bare captures. Only images that
 changed are uploaded (Play's copies are compared by checksum), and each change
 goes through Play's review.
 
+### The website and privacy policy
+
+`site/` is published to <https://bradflaugher.github.io/bf-12c/> by
+`.github/workflows/pages.yml` whenever a push to `main` changes it (or by
+running the workflow by hand). The privacy policy is
+<https://bradflaugher.github.io/bf-12c/privacy/>: the app's MENU links to it
+(`Links.PRIVACY_POLICY_URL`) and so does Play Console › App content ›
+Privacy policy. If the app starts handling data differently, update
+`site/privacy/index.html` and its date in the same pull request, and the Data
+safety form in Play Console if it changes. Pages is set to deploy from
+GitHub Actions (Settings › Pages).
+
 ### Going to production
 
 Production needs Play's production access first: for a personal developer
@@ -123,6 +135,7 @@ recreate them:
 | Actions permissions | GitHub-owned actions plus `android-actions/setup-android`, `gradle/actions/*` and `reactivecircus/android-emulator-runner`; full-SHA pinning required |
 | Google Play API access | Service account `github-play-publisher@play-publishing-511400.iam.gserviceaccount.com` (Google Cloud project `play-publishing-511400`), invited in Play Console › Users and permissions with account-wide: view app information, release to production, release to testing tracks, manage store presence. Its JSON key is the `PLAY_SERVICE_ACCOUNT_JSON` secret of the `google-play` environment |
 | Environment `google-play` | Deployable from `main` only; holds `PLAY_SERVICE_ACCOUNT_JSON`; the `Google Play` job and `play-promote.yml` run in it |
+| GitHub Pages | Source: GitHub Actions (`pages.yml`); the `github-pages` environment deploys from `main` only |
 | Default `GITHUB_TOKEN` | Read-only; jobs ask for more themselves |
 | Fork PR workflows | Approval required for every outside contributor |
 | Dependabot | Alerts and security updates on; version updates from `.github/dependabot.yml` |

@@ -20,7 +20,8 @@ object Links {
     const val MARKET_URL = "market://details?id=$APPLICATION_ID"
     const val PLAY_STORE_PACKAGE = "com.android.vending"
     const val ISSUES_URL = "https://github.com/bradflaugher/bf-12c/issues/new"
-    const val PRIVACY_POLICY_URL = "https://bradflaugher.com/privacy/bf-12c/"
+    /** The privacy page of the app's own site, served by GitHub Pages from site/. */
+    const val PRIVACY_POLICY_URL = "https://bradflaugher.github.io/bf-12c/privacy/"
 
     const val SHARE_TEXT = "bf-12c: an RPN financial calculator with the classic 12c keyboard and 34 digits. Free, no ads. $PLAY_URL"
 

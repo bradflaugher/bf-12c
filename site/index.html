@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>bf-12c — an RPN financial calculator for Android</title>
+  <meta name="description" content="bf-12c is an RPN financial calculator for Android and a homage to the HP-12C: the real 12c keyboard, 34 significant digits and a green-screen display. Free, no ads, no network, no permissions.">
+  <meta name="theme-color" content="#0b0c0b">
+  <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://bradflaugher.github.io/bf-12c/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="bf-12c — RPN financial calculator">
+  <meta property="og:description" content="The real 12c keyboard, 34 significant digits and a green-screen display. No ads, no network, no permissions.">
+  <meta property="og:url" content="https://bradflaugher.github.io/bf-12c/">
+  <meta property="og:image" content="https://bradflaugher.github.io/bf-12c/img/og.png">
+  <meta property="og:image:width" content="1024">
+  <meta property="og:image:height" content="500">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preload" href="fonts/vt323.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="./" aria-label="bf-12c home"><span class="bf">bf</span><span class="model">12C</span></a>
+      <nav aria-label="Site">
+        <a class="opt" href="#keys">Keys</a>
+        <a class="opt" href="#screens">Screens</a>
+        <a href="#get">Get it</a>
+        <a href="privacy/">Privacy</a>
+        <a href="https://github.com/bradflaugher/bf-12c">Source</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="hero">
+      <div class="wrap grid">
+        <div>
+          <p class="eyebrow">RPN // Financial</p>
+          <h1 class="glow">RPN financial calculator</h1>
+          <p class="sub">34 digits · TVM · cash flows<br>programs · no ads, no network</p>
+          <hr class="rule">
+          <p class="lede">A hyper-modern Android calculator and homage to the HP-12C. Real RPN, the real 12c keyboard key for key, 34 significant digits in every register, and an 80s green-screen display. It shows up in your app drawer as <strong>Calculator (bf-12c)</strong>.</p>
+          <div class="keys">
+            <a class="key f" href="#get">GET IT<small>free · Android 13+</small></a>
+            <a class="key g" href="https://github.com/bradflaugher/bf-12c">SOURCE<small>MIT · GitHub</small></a>
+          </div>
+        </div>
+
+        <figure>
+          <div class="crt" role="img" aria-label="The bf-12c display after a 30-year mortgage payment: X is minus 2,212.24, with all 34 digits shown beneath it">
+            <div class="reg"><span>T</span><span>0.00</span></div>
+            <div class="reg"><span>Z</span><span>0.00</span></div>
+            <div class="reg"><span>Y</span><span>0.00</span></div>
+            <div class="x glow">-2,212.24</div>
+            <div class="full">≡ -2212.238082225373062160410866835309</div>
+            <div class="ann" aria-hidden="true"><span>f</span><span>g</span><span>BEGIN</span><span>D.MY</span><span>C</span><span>PRGM</span></div>
+          </div>
+          <figcaption><kbd>30</kbd> <kbd>g</kbd> <kbd>n</kbd> <kbd>6.5</kbd> <kbd>g</kbd> <kbd>i</kbd> <kbd>350000</kbd> <kbd>PV</kbd> <kbd>0</kbd> <kbd>FV</kbd> <kbd>PMT</kbd><br>a 30-year mortgage payment, to 34 digits</figcaption>
+        </figure>
+      </div>
+
+      <div class="wrap">
+        <figure class="showcase" style="margin-top: clamp(40px, 6vw, 72px)">
+          <div class="device"><img src="img/landscape.webp" width="1600" height="900" alt="bf-12c in landscape: the green-screen display showing the square root of 2 to 34 digits above the full 4 by 10 keyboard, gold f legends above the keys and blue g legends below"></div>
+          <figcaption><b>Landscape</b> — the real 4×10 keyboard, key for key</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <section id="keys">
+      <div class="wrap">
+        <p class="eyebrow">What's on the keys</p>
+        <h2>The 12c, all of it</h2>
+        <p class="intro">Loans, mortgages, NPV, IRR, amortization, bonds, depreciation, dates, statistics and keystroke programs, the way the 12c does them. Landscape is the full keyboard; portrait folds it in half, financial keys on top and the number pad where your thumbs are.</p>
+
+        <div class="features">
+          <article class="feature">
+            <div class="legend" aria-hidden="true">PREFIX</div>
+            <div class="cap" aria-hidden="true"><span>ENTER</span><i>LSTx</i></div>
+            <h3>Real RPN</h3>
+            <p>A four-level stack (X Y Z T), LSTx, and stack lift that behaves like the real thing. Continuous memory: the stack, the registers and your program survive restarts.</p>
+          </article>
+          <article class="feature">
+            <div class="legend" aria-hidden="true">RND</div>
+            <div class="cap" aria-hidden="true"><span>PMT</span><i>CFj</i></div>
+            <h3>Time value of money</h3>
+            <p><code>n</code> <code>i</code> <code>PV</code> <code>PMT</code> <code>FV</code>: solve for any one of them. BEGIN / END, <code>12×</code> and <code>12÷</code>, amortization schedules and simple interest.</p>
+          </article>
+          <article class="feature">
+            <div class="legend" aria-hidden="true">IRR</div>
+            <div class="cap" aria-hidden="true"><span>FV</span><i>Nj</i></div>
+            <h3>Cash flows, bonds, dates</h3>
+            <p>NPV and IRR over up to 20 cash-flow groups, bond price and yield, SL / SOYD / DB depreciation, and dates and the days between them.</p>
+          </article>
+          <article class="feature">
+            <div class="legend" aria-hidden="true">ALL</div>
+            <div class="cap" aria-hidden="true"><span>EEX</span><i>ΔDYS</i></div>
+            <h3>34 significant digits</h3>
+            <p>Every register is a 34-digit decimal, not a floating-point double. <code>f EEX</code> shows all of them; when the display is rounded, portrait shows the full value beneath it.</p>
+          </article>
+          <article class="feature">
+            <div class="legend" aria-hidden="true">P/R</div>
+            <div class="cap" aria-hidden="true"><span>R/S</span><i>PSE</i></div>
+            <h3>Keystroke programs</h3>
+            <p>99 merged lines with <code>GTO</code>, <code>x≤y</code>, <code>x=0</code>, pause and single-step both ways. The listing shows the 12c keycodes and a readable mnemonic.</p>
+          </article>
+          <article class="feature">
+            <div class="legend" aria-hidden="true"></div>
+            <div class="cap" aria-hidden="true"><span>Σ+</span><i>Σ−</i></div>
+            <h3>Math and statistics</h3>
+            <p>%, Δ%, %T, mean, standard deviation, weighted mean, linear estimate and correlation, 20 storage registers with STO arithmetic, yˣ, eˣ, LN, n!.</p>
+          </article>
+          <article class="feature">
+            <div class="legend" aria-hidden="true"></div>
+            <div class="cap" aria-hidden="true"><span>−</span><i>←</i></div>
+            <h3>On the glass</h3>
+            <p>Swipe the display to backspace, long-press to copy X, double-tap to paste. Paste reads numbers the way people copy them: <code>$1,000</code>, <code>(250.00)</code>, <code>6.02e23</code>.</p>
+          </article>
+          <article class="feature">
+            <div class="legend" aria-hidden="true"></div>
+            <div class="cap" aria-hidden="true"><span>MENU</span><i></i></div>
+            <h3>The MENU key</h3>
+            <p>Where the 12c's ON key sits: four phosphors, haptics, a built-in manual and FAQ, the tips, and a way to report a bug. It never nags you to rate or share.</p>
+          </article>
+          <article class="feature">
+            <div class="legend" aria-hidden="true"></div>
+            <div class="cap" aria-hidden="true"><span>⌨</span><i>TalkBack</i></div>
+            <h3>Every screen, every input</h3>
+            <p>Phones, tablets, foldables and Chromebooks, split screen or desktop window. Touch, mouse, a hardware keyboard, or TalkBack, which reads every key in words.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="screens">
+      <div class="wrap">
+        <p class="eyebrow">Screens</p>
+        <h2>Folded, programmed, lit</h2>
+        <p class="intro">The layout follows the window, not the device. Portrait folds the keyboard; tablets and unfolded foldables print the legends, registers and menu bigger.</p>
+        <div class="tall">
+          <figure><div class="device"><img src="img/portrait.webp" width="540" height="960" loading="lazy" alt="Portrait layout: the stack above, financial keys on top and the number pad at the bottom"></div><figcaption><b>Portrait</b> · folded</figcaption></figure>
+          <figure><div class="device"><img src="img/program.webp" width="540" height="960" loading="lazy" alt="Program mode listing keycodes beside readable mnemonics"></div><figcaption><b>Program mode</b></figcaption></figure>
+          <figure><div class="device"><img src="img/menu.webp" width="540" height="960" loading="lazy" alt="The green-screen system menu with phosphor themes, haptics, manual and links"></div><figcaption><b>MENU</b> · system menu</figcaption></figure>
+          <figure><div class="device"><img src="img/tips.webp" width="540" height="960" loading="lazy" alt="First-run tips: one screen, dismissed with a tap"></div><figcaption><b>First run</b> · one tap</figcaption></figure>
+        </div>
+        <div class="wide">
+          <figure><div class="device"><img src="img/f-shift.webp" width="1280" height="720" loading="lazy" alt="Landscape with the f shift active: gold legends light up"></div><figcaption><b>f shift</b> · gold legends light up</figcaption></figure>
+          <figure><div class="device"><img src="img/amber.webp" width="1280" height="720" loading="lazy" alt="Landscape in the P3 amber phosphor"></div><figcaption><b>P3 amber</b> · one of four phosphors</figcaption></figure>
+          <figure><div class="device"><img src="img/tablet.webp" width="1600" height="900" loading="lazy" alt="A 10-inch tablet in landscape with bigger legends, registers and menu"></div><figcaption><b>Tablet</b> · everything bigger</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="phosphors">
+      <div class="wrap">
+        <p class="eyebrow">MENU › Theme</p>
+        <h2>Four phosphors</h2>
+        <p class="intro">Pick the glass. The keyboard keeps the 12c's gold and blue whichever you choose.</p>
+        <div class="phosphors">
+          <figure class="phosphor"><div class="crt" aria-hidden="true"><div class="reg"><span>Y</span><span>9,000.00</span></div><div class="x glow">8.12</div></div><figcaption><b>P1 green</b></figcaption></figure>
+          <figure class="phosphor amber"><div class="crt" aria-hidden="true"><div class="reg"><span>Y</span><span>9,000.00</span></div><div class="x glow">8.12</div></div><figcaption><b>P3 amber</b></figcaption></figure>
+          <figure class="phosphor ice"><div class="crt" aria-hidden="true"><div class="reg"><span>Y</span><span>9,000.00</span></div><div class="x glow">8.12</div></div><figcaption><b>Ice</b></figcaption></figure>
+          <figure class="phosphor lcd"><div class="crt" aria-hidden="true"><div class="reg"><span>Y</span><span>9,000.00</span></div><div class="x glow">8.12</div></div><figcaption><b>12C LCD</b></figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="nonsense">
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow">No nonsense</p>
+          <h2>Nothing leaves the phone</h2>
+          <p class="intro">bf-12c asks for no permissions at all, not even the network. No accounts, ads, analytics or crash reporting, and nothing is backed up off the device. Rating and sharing are menu items, there when you want them, never a prompt.</p>
+          <p><a href="privacy/">Read the privacy policy →</a></p>
+        </div>
+        <div class="crt readout glow" role="img" aria-label="Permissions: none. Network: none. Ads: none. Tracking: none. Backups: none. Price: free.">
+          <ul aria-hidden="true">
+            <li><span>PERMISSIONS</span><span class="ok">0</span></li>
+            <li><span>NETWORK</span><span class="ok">OFF</span></li>
+            <li><span>ADS</span><span class="ok">0</span></li>
+            <li><span>TRACKING</span><span class="ok">0</span></li>
+            <li><span>BACKUPS</span><span class="ok">OFF</span></li>
+            <li><span>PRICE</span><span class="ok">0.00</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="get">
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow">Get it</p>
+          <h2>Install bf-12c</h2>
+          <p class="intro">bf-12c is in closed testing on Google Play and isn't publicly listed there yet. Until it is, sideload the APK from GitHub. It needs Android 13 or newer.</p>
+          <div class="keys">
+            <a class="key f" href="https://github.com/bradflaugher/bf-12c/releases/latest">LATEST APK<small>bf-12c.apk</small></a>
+            <a class="key" href="https://github.com/bradflaugher/bf-12c/issues/new">FEEDBACK<small>GitHub issue</small></a>
+          </div>
+        </div>
+        <ol class="steps">
+          <li><h3>Download</h3><p>Grab <code>bf-12c.apk</code> from the <a href="https://github.com/bradflaugher/bf-12c/releases/latest">latest release</a>. Every push to <code>main</code> publishes one date-labeled release and replaces the last.</p></li>
+          <li><h3>Verify</h3><p>Check it against the attached <code>bf-12c.apk.sha256</code>. The release also carries a build-provenance attestation.</p></li>
+          <li><h3>Install</h3><p>Open the APK and allow your browser or file manager to install it. Later releases install right over it.</p></li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <nav aria-label="Footer">
+        <a href="https://github.com/bradflaugher/bf-12c">Source</a>
+        <a href="https://github.com/bradflaugher/bf-12c/issues">Issues</a>
+        <a href="https://github.com/bradflaugher/bf-12c/releases/latest">Releases</a>
+        <a href="privacy/">Privacy</a>
+        <a href="https://github.com/bradflaugher/bf-12c/blob/main/LICENSE">MIT license</a>
+      </nav>
+      <p>Made by <a href="https://bradflaugher.com">Brad Flaugher</a>. Set in <a href="https://fonts.google.com/specimen/VT323">VT323</a> and <a href="https://fonts.google.com/specimen/Share+Tech+Mono">Share Tech Mono</a> (SIL Open Font License), served from this site. HP and HP-12C are trademarks of HP Inc.; bf-12c is an unaffiliated fan homage.</p>
+    </div>
+  </footer>
+</body>
+</html>

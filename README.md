@@ -6,6 +6,9 @@ It shows up in the app drawer as **Calculator (bf-12c)**, so it sorts and
 searches next to every other calculator, with a pocket-12c adaptive icon
 (themed-icon ready).
 
+Website: <https://bradflaugher.github.io/bf-12c/> ·
+[privacy policy](https://bradflaugher.github.io/bf-12c/privacy/)
+
 <div align="center">
   <img src="docs/screenshots/landscape.png" alt="Landscape: the full 12c keyboard">
   <p><em><b>Landscape</b> — the real 4×10 keyboard, key for key</em></p>
@@ -172,8 +175,8 @@ a tiny keystroke DSL (`"30 g n 6.5 g i 100000 PV 0 FV PMT"`, see
   addresses, CI actions pinned to SHAs, compileSdk
   matching targetSdk, and no `SDK_INT` checks.
 - `LinksTest` — the Share, Rate and Send feedback strings: the Play and
-  market links match the release application ID and the issue URL is well
-  formed.
+  market links match the release application ID, the issue URL is well
+  formed, and the privacy link is the site's privacy page.
 
 GitHub Actions runs them on every pull request and push to `main`
 (`.github/workflows/ci.yml`, one check each for unit tests and lint, with a
@@ -184,6 +187,15 @@ Signed release builds need all four of `BF12C_KEYSTORE_PATH`,
 `BF12C_STORE_PASSWORD`, `BF12C_KEY_ALIAS`, `BF12C_KEY_PASSWORD` (or none, for
 an unsigned build). CI restores the keystore from the
 `BF12C_KEYSTORE_BASE64` secret.
+
+## Website
+
+`site/` is the app's website and privacy policy, plain hand-written HTML and
+CSS in the app's own fonts and colors, loading nothing from other sites.
+`.github/workflows/pages.yml` checks it on pull requests
+(`python3 .github/scripts/check_site.py`: local links resolve, no
+third-party requests) and deploys it to GitHub Pages on every push to
+`main` that touches it. Preview it with `python3 -m http.server -d site`.
 
 ## Credits
 
