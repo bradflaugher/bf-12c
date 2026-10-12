@@ -116,7 +116,7 @@ bf-12c isn't publicly listed on Google Play yet. Until it is, grab
 sideload it. Every push to `main` publishes a single date-labeled release
 (`vYYYY.MM.DD.N`) and deletes the previous one. The release also includes
 `bf-12c.aab` and `mapping.txt` for Google Play. Verify the APK with the
-attached `bf-12c.apk.sha256`.
+attached `bf-12c.apk.sha256`. Every merge to `main` also goes to Google Play's closed testing, with the store listing; how to ship an update, change the listing or go to production is in [MAINTAINING.md › Releasing](MAINTAINING.md#releasing).
 
 Requires Android 13 or newer.
 
