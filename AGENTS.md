@@ -64,6 +64,11 @@ repository's security settings.
   `CalculatorTest` (keys, rules, regressions), `PropertyTest` (seeded
   identities and the keystroke fuzzer), `FormatTest`, `ProgramParserTest`,
   and `InvariantsTest` (enforces the invariants below).
+- `site/` — the website and privacy policy at
+  <https://bradflaugher.github.io/bf-12c/>, static HTML/CSS deployed by
+  `.github/workflows/pages.yml`. No third-party requests (fonts are
+  self-hosted). `Links.PRIVACY_POLICY_URL` points at `site/privacy/`; keep
+  that page true to what the app does.
 - `tools/icon/gen_icon.py` — generates the adaptive launcher icon
   (`res/drawable/ic_launcher_*.xml`). Edit the script, not the XML.
 - `tools/screenshots/shoot.py` — captures the Play and README screenshots

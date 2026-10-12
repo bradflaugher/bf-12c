@@ -33,6 +33,11 @@ class LinksTest {
         assertTrue(body.contains("What happened"))
     }
 
+    @Test fun privacyPolicyIsTheSitesPrivacyPage() {
+        assertEquals("https://bradflaugher.github.io/bf-12c/privacy/", Links.PRIVACY_POLICY_URL)
+        assertTrue("site/privacy/index.html is what that URL serves", File(app.parentFile, "site/privacy/index.html").isFile)
+    }
+
     @Test fun everyLinkIsHttps() {
         for (url in listOf(Links.PLAY_URL, Links.ISSUES_URL, Links.PRIVACY_POLICY_URL)) {
             assertEquals("https", URI(url).scheme)
