@@ -54,14 +54,21 @@ def local_target(page: Path, ref: str) -> Path | None:
     return target
 
 
+def parse(page: Path) -> Refs:
+    refs = Refs()
+    refs.feed(page.read_text(encoding="utf-8"))
+    return refs
+
+
 def main() -> int:
     errors = []
+    root = SITE.resolve()
     pages = sorted(SITE.rglob("*.html"))
+    parsed = {p.resolve(): parse(p) for p in pages}
     if not (SITE / "index.html").is_file() or not (SITE / "privacy" / "index.html").is_file():
         errors.append("site/index.html and site/privacy/index.html must exist")
     for page in pages:
-        refs = Refs()
-        refs.feed(page.read_text(encoding="utf-8"))
+        refs = parsed[page.resolve()]
         for ref in refs.loads:
             if urlsplit(ref).scheme or ref.startswith("//"):
                 errors.append(f"{page}: loads {ref} from another origin")
@@ -69,16 +76,23 @@ def main() -> int:
             if ref.startswith(("mailto:", "tel:")):
                 continue
             target = local_target(page, ref)
-            if target is not None and not target.resolve().is_file():
-                errors.append(f"{page}: {ref} does not exist")
+            if target is None:
+                continue
+            target = target.resolve()
+            # Only site/ is uploaded, so anything outside it 404s once deployed.
+            if not target.is_relative_to(root) or not target.is_file():
+                errors.append(f"{page}: {ref} does not exist in site/")
+                continue
             frag = urlsplit(ref).fragment
-            if frag and target is not None and target.resolve() == page.resolve() and frag not in refs.ids:
-                errors.append(f"{page}: #{frag} has no matching id")
+            if frag and target in parsed and frag not in parsed[target].ids:
+                errors.append(f"{page}: {ref} has no matching id")
     for css in SITE.rglob("*.css"):
         for ref in re.findall(r"""url\(\s*["']?([^"')]+)""", css.read_text(encoding="utf-8")):
             if urlsplit(ref).scheme in ("http", "https") or ref.startswith("//"):
                 errors.append(f"{css}: loads {ref} from another origin")
-            elif not ref.startswith("data:") and not (css.parent / ref).resolve().is_file():
+            elif not ref.startswith("data:") and not (
+                (css.parent / ref).resolve().is_relative_to(root) and (css.parent / ref).resolve().is_file()
+            ):
                 errors.append(f"{css}: {ref} does not exist")
         if "@import" in css.read_text(encoding="utf-8"):
             errors.append(f"{css}: no @import")
