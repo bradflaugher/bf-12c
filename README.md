@@ -6,8 +6,16 @@ It shows up in the app drawer as **Calculator (bf-12c)**, so it sorts and
 searches next to every other calculator, with a pocket-12c adaptive icon
 (themed-icon ready).
 
-Website: <https://bradflaugher.github.io/bf-12c/> ·
-[privacy policy](https://bradflaugher.github.io/bf-12c/privacy/)
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.bradflaugher.bf12c"><img src="docs/google-play-badge.png" alt="Get it on Google Play" height="64"></a>
+</p>
+
+<p align="center">
+  <b>Free on <a href="https://play.google.com/store/apps/details?id=com.bradflaugher.bf12c">Google Play</a></b> · no ads · no permissions · Android 13+<br>
+  <a href="https://bradflaugher.github.io/bf-12c/">Website</a> ·
+  <a href="https://bradflaugher.github.io/bf-12c/privacy/">Privacy policy</a> ·
+  <a href="../../releases/latest">Latest APK</a>
+</p>
 
 <div align="center">
   <img src="docs/screenshots/landscape.png" alt="Landscape: the full 12c keyboard">
@@ -114,14 +122,16 @@ Full policy in [`AGENTS.md`](AGENTS.md).
 
 ## Install
 
-bf-12c isn't publicly listed on Google Play yet. Until it is, grab
-`bf-12c.apk` from the [latest release](../../releases/latest) and
-sideload it. Every push to `main` publishes a single date-labeled release
+<a href="https://play.google.com/store/apps/details?id=com.bradflaugher.bf12c"><img src="docs/google-play-badge.png" alt="Get it on Google Play" height="56"></a>
+
+bf-12c is free on [Google Play](https://play.google.com/store/apps/details?id=com.bradflaugher.bf12c),
+which keeps it up to date. Requires Android 13 or newer.
+
+Prefer to sideload? Grab `bf-12c.apk` from the
+[latest release](../../releases/latest). Every push to `main` publishes a single date-labeled release
 (`vYYYY.MM.DD.N`) and deletes the previous one. The release also includes
 `bf-12c.aab` and `mapping.txt` for Google Play. Verify the APK with the
 attached `bf-12c.apk.sha256`. Every merge to `main` also goes to Google Play's closed testing, with the store listing; how to ship an update, change the listing or go to production is in [MAINTAINING.md › Releasing](MAINTAINING.md#releasing).
-
-Requires Android 13 or newer.
 
 ## Build
 
