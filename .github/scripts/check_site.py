@@ -37,7 +37,7 @@ class Refs(HTMLParser):
             rel = a.get("rel", "")
             # canonical is a URL, not a load.
             (self.links if rel == "canonical" else self.loads).append(a["href"])
-            if rel == "stylesheet":
+            if "stylesheet" in rel.lower().split():
                 self.styles.append(a["href"])
         elif tag in ("img", "script", "source", "iframe", "video", "audio") and a.get("src"):
             self.loads.append(a["src"])
@@ -63,22 +63,20 @@ def local_target(page: Path, ref: str) -> Path | None:
 
 
 def version(css: Path) -> str:
-    return hashlib.sha256(css.read_bytes()).hexdigest()[:10]
+    # LF-normalized, so a CRLF checkout stamps the hash CI computes.
+    return hashlib.sha256(css.read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:10]
 
 
 def fix_versions(pages: list[Path]) -> None:
     """Rewrites each local stylesheet href to carry its file's current hash."""
     for page in pages:
-        html = page.read_text(encoding="utf-8")
-
-        def stamp(m: re.Match) -> str:
-            path = m.group(2).split("?", 1)[0]
+        html = new = page.read_text(encoding="utf-8")
+        for href in parse(page).styles:
+            path = urlsplit(href).path
             target = local_target(page, path)
-            if target is None or not target.is_file():
-                return m.group(0)
-            return f"{m.group(1)}{path}?v={version(target)}{m.group(3)}"
-
-        new = re.sub(r'(<link rel="stylesheet" href=")([^"]+)(")', stamp, html)
+            if target is not None and target.is_file():
+                new = re.sub(r'(href=["\'])' + re.escape(href) + r'(["\'])',
+                             lambda m: f"{m.group(1)}{path}?v={version(target)}{m.group(2)}", new)
         if new != html:
             page.write_text(new, encoding="utf-8")
 
@@ -115,7 +113,7 @@ def main() -> int:
                 errors.append(f"{page}: {ref} does not exist in site/")
                 continue
             if ref in refs.styles and urlsplit(ref).query != f"v={version(target)}":
-                errors.append(f"{page}: {ref} should end ?v={version(target)} (run check_site.py --fix)")
+                errors.append(f"{page}: {ref} should end ?v={version(target)} (run python3 .github/scripts/check_site.py --fix)")
             frag = urlsplit(ref).fragment
             if frag and target in parsed and frag not in parsed[target].ids:
                 errors.append(f"{page}: {ref} has no matching id")
