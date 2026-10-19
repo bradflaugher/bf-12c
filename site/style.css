@@ -151,10 +151,11 @@ p { margin: 0 0 1em; }
 .play {
   display: inline-flex; border-radius: 8px;
   box-shadow: 0 3px 0 #050505, 0 8px 18px rgb(0 0 0 / 0.4);
-  transition: transform 0.06s, box-shadow 0.06s, filter 0.06s;
+  transition: transform 0.06s, box-shadow 0.06s;
 }
 .play img { display: block; width: auto; height: 60px; }
-.play:hover { filter: brightness(1.12); }
+/* Hover lifts the badge; Google's guidelines forbid recoloring its artwork. */
+.play:hover { transform: translateY(-1px); box-shadow: 0 4px 0 #050505, 0 10px 22px rgb(0 0 0 / 0.5); }
 .play:active { transform: translateY(2px); box-shadow: 0 1px 0 #050505, 0 3px 8px rgb(0 0 0 / 0.4); }
 .play:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .fine { color: var(--muted); font-size: 14px; letter-spacing: 0.06em; margin: 14px 0 0; }
