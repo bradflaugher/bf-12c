@@ -3,9 +3,15 @@
 
 Every local link and asset must exist, and nothing may load from another
 origin (fonts, scripts, styles, images): the site, like the app, makes no
-third-party requests. Links out to other sites are fine. Standard library
-only; run it from the repository root.
+third-party requests. Links out to other sites are fine.
+
+Each stylesheet link carries the stylesheet's content hash (`style.css?v=…`),
+so a page never pairs with a stale cached copy: Pages lets browsers cache
+for ten minutes, and a new page on an old stylesheet renders broken. Run
+with --fix to write the current hashes into the pages after a CSS change.
+Standard library only; run it from the repository root.
 """
+import hashlib
 import re
 import sys
 from html.parser import HTMLParser
@@ -19,7 +25,7 @@ BASE = "/bf-12c/"  # the Pages path, which 404.html links from
 class Refs(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.links, self.loads, self.ids = [], [], set()
+        self.links, self.loads, self.styles, self.ids = [], [], [], set()
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -31,6 +37,8 @@ class Refs(HTMLParser):
             rel = a.get("rel", "")
             # canonical is a URL, not a load.
             (self.links if rel == "canonical" else self.loads).append(a["href"])
+            if "stylesheet" in rel.lower().split():
+                self.styles.append(a["href"])
         elif tag in ("img", "script", "source", "iframe", "video", "audio") and a.get("src"):
             self.loads.append(a["src"])
 
@@ -54,6 +62,25 @@ def local_target(page: Path, ref: str) -> Path | None:
     return target
 
 
+def version(css: Path) -> str:
+    # LF-normalized, so a CRLF checkout stamps the hash CI computes.
+    return hashlib.sha256(css.read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:10]
+
+
+def fix_versions(pages: list[Path]) -> None:
+    """Rewrites each local stylesheet href to carry its file's current hash."""
+    for page in pages:
+        html = new = page.read_text(encoding="utf-8")
+        for href in parse(page).styles:
+            path = urlsplit(href).path
+            target = local_target(page, path)
+            if target is not None and target.is_file():
+                new = re.sub(r'(href=["\'])' + re.escape(href) + r'(["\'])',
+                             lambda m: f"{m.group(1)}{path}?v={version(target)}{m.group(2)}", new)
+        if new != html:
+            page.write_text(new, encoding="utf-8")
+
+
 def parse(page: Path) -> Refs:
     refs = Refs()
     refs.feed(page.read_text(encoding="utf-8"))
@@ -64,6 +91,8 @@ def main() -> int:
     errors = []
     root = SITE.resolve()
     pages = sorted(SITE.rglob("*.html"))
+    if "--fix" in sys.argv[1:]:
+        fix_versions(pages)
     parsed = {p.resolve(): parse(p) for p in pages}
     if not (SITE / "index.html").is_file() or not (SITE / "privacy" / "index.html").is_file():
         errors.append("site/index.html and site/privacy/index.html must exist")
@@ -83,6 +112,8 @@ def main() -> int:
             if not target.is_relative_to(root) or not target.is_file():
                 errors.append(f"{page}: {ref} does not exist in site/")
                 continue
+            if ref in refs.styles and urlsplit(ref).query != f"v={version(target)}":
+                errors.append(f"{page}: {ref} should end ?v={version(target)} (run python3 .github/scripts/check_site.py --fix)")
             frag = urlsplit(ref).fragment
             if frag and target in parsed and frag not in parsed[target].ids:
                 errors.append(f"{page}: {ref} has no matching id")
