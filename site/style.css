@@ -147,6 +147,17 @@ p { margin: 0 0 1em; }
 .key.g { background: linear-gradient(var(--blue-hi) 0 62%, var(--blue) 62%); color: #08192a; border-color: #a8d8ff; }
 .key.g small { color: #0d2a45; }
 
+/* The official Google Play badge, untouched. Google's guidelines forbid
+   recoloring it and keep a clear space of a quarter of its height (15px)
+   around it, so it gets no shadow and its margins plus the 12px .keys gap
+   hold neighbors at 15px. */
+.play { display: inline-flex; margin: 0 3px 3px 0; transition: transform 0.06s; }
+.play img { display: block; width: auto; height: 60px; }
+.play:hover { transform: translateY(-1px); }
+.play:active { transform: translateY(1px); }
+.play:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.fine { color: var(--muted); font-size: 14px; letter-spacing: 0.06em; margin: 14px 0 0; }
+
 /* ── Device frame ──────────────────────────────────────────────────────── */
 
 .device {
