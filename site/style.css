@@ -147,16 +147,14 @@ p { margin: 0 0 1em; }
 .key.g { background: linear-gradient(var(--blue-hi) 0 62%, var(--blue) 62%); color: #08192a; border-color: #a8d8ff; }
 .key.g small { color: #0d2a45; }
 
-/* The official Google Play badge, sized to sit beside the keys and pressed like one. */
-.play {
-  display: inline-flex; border-radius: 8px;
-  box-shadow: 0 3px 0 #050505, 0 8px 18px rgb(0 0 0 / 0.4);
-  transition: transform 0.06s, box-shadow 0.06s;
-}
+/* The official Google Play badge, untouched. Google's guidelines forbid
+   recoloring it and keep a clear space of a quarter of its height (15px)
+   around it, so it gets no shadow and its margins plus the 12px .keys gap
+   hold neighbors at 15px. */
+.play { display: inline-flex; margin: 0 3px 3px 0; transition: transform 0.06s; }
 .play img { display: block; width: auto; height: 60px; }
-/* Hover lifts the badge; Google's guidelines forbid recoloring its artwork. */
-.play:hover { transform: translateY(-1px); box-shadow: 0 4px 0 #050505, 0 10px 22px rgb(0 0 0 / 0.5); }
-.play:active { transform: translateY(2px); box-shadow: 0 1px 0 #050505, 0 3px 8px rgb(0 0 0 / 0.4); }
+.play:hover { transform: translateY(-1px); }
+.play:active { transform: translateY(1px); }
 .play:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .fine { color: var(--muted); font-size: 14px; letter-spacing: 0.06em; margin: 14px 0 0; }
 
