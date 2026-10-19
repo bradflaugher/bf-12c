@@ -204,8 +204,12 @@ an unsigned build). CI restores the keystore from the
 CSS in the app's own fonts and colors, loading nothing from other sites.
 `.github/workflows/pages.yml` checks it on pull requests
 (`python3 .github/scripts/check_site.py`: local links resolve, no
-third-party requests) and deploys it to GitHub Pages on every push to
-`main` that touches it. Preview it with `python3 -m http.server -d site`.
+third-party requests, and every stylesheet link carries the stylesheet's
+content hash) and deploys it to GitHub Pages on every push to `main` that
+touches it. After editing `style.css`, run `check_site.py --fix` to stamp
+the new hash into the pages (`style.css?v=…`), so no browser pairs a new
+page with a stale cached stylesheet. Preview it with
+`python3 -m http.server -d site`.
 
 ## Credits
 
