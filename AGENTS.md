@@ -29,7 +29,7 @@ everything** and never carries code just for older devices:
   dependency, that change is wrong for this project.
 
 Do not copy version numbers into docs. Pins live in Gradle and are updated
-by Dependabot. `MAINTAINING.md` covers the weekly update routine and the
+by Dependabot. `MAINTAINING.md` covers the quarterly update routine and the
 repository's security settings.
 
 ## Layout
