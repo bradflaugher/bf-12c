@@ -128,10 +128,10 @@ bf-12c is free on [Google Play](https://play.google.com/store/apps/details?id=co
 which keeps it up to date. Requires Android 13 or newer.
 
 Prefer to sideload? Grab `bf-12c.apk` from the
-[latest release](../../releases/latest). Every push to `main` publishes a single date-labeled release
+[latest release](../../releases/latest). Every push to `main` that changes the app publishes a single date-labeled release
 (`vYYYY.MM.DD.N`) and deletes the previous one. The release also includes
 `bf-12c.aab` and `mapping.txt` for Google Play. Verify the APK with the
-attached `bf-12c.apk.sha256`. Every merge to `main` also goes to Google Play's closed testing, with the store listing; how to ship an update, change the listing or go to production is in [MAINTAINING.md › Releasing](MAINTAINING.md#releasing).
+attached `bf-12c.apk.sha256`. Every merge to `main` that changes the app also goes to Google Play's closed testing, with the store listing (a listing-only change just syncs the listing); how to ship an update, change the listing or go to production is in [MAINTAINING.md › Releasing](MAINTAINING.md#releasing).
 
 ## Build
 
