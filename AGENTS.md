@@ -127,7 +127,7 @@ repository's security settings.
 `.github/workflows/ci.yml` runs the unit tests and lint as
 separate checks on every pull request and push to `main`.
 
-Every push to `main` builds a signed APK and Play bundle and publishes
+Every push to `main` that changes the app builds a signed APK and Play bundle and publishes
 them as the single date-labeled GitHub release `vYYYY.MM.DD.<run>`,
 deleting all older releases. The same run uploads the bundle to Google
 Play's Closed testing - Alpha track and syncs the store listing (text,
